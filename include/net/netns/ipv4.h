@@ -19,23 +19,28 @@ struct netns_ipv4 {
 	struct ctl_table_header	*frags_hdr;
 	struct ctl_table_header	*ipv4_hdr;
 #endif
-	struct ipv4_devconf	*devconf_all;
-	struct ipv4_devconf	*devconf_dflt;
+
+	struct ipv4_devconf		*devconf_all;
+	struct ipv4_devconf		*devconf_dflt;
+
 #ifdef CONFIG_IP_MULTIPLE_TABLES
 	struct fib_rules_ops	*rules_ops;
 #endif
-	struct hlist_head	*fib_table_hash;
-	struct sock		*fibnl;
 
-	struct sock		**icmp_sk;
-	struct sock		*tcp_sock;
+	/* forward information base configures */
+	struct hlist_head		*fib_table_hash;
+	struct sock				*fibnl;
 
-	struct netns_frags	frags;
-#ifdef CONFIG_NETFILTER
-	struct xt_table		*iptable_filter;
-	struct xt_table		*iptable_mangle;
-	struct xt_table		*iptable_raw;
-	struct xt_table		*arptable_filter;
+	struct sock				**icmp_sk;
+	struct sock				*tcp_sock;
+
+	struct netns_frags		frags;
+
+#ifdef CONFIG_NETFILTER /* iptables configures */
+	struct xt_table			*iptable_filter;
+	struct xt_table			*iptable_mangle;
+	struct xt_table			*iptable_raw;
+	struct xt_table			*arptable_filter;
 #endif
 
 	int sysctl_icmp_echo_ignore_all;

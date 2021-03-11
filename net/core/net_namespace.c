@@ -40,8 +40,9 @@ static __net_init int setup_net(struct net *net)
 #endif
 
 	error = -ENOMEM;
+
 	ng = kzalloc(sizeof(struct net_generic) +
-			INITIAL_NET_GEN_PTRS * sizeof(void *), GFP_KERNEL);
+				 INITIAL_NET_GEN_PTRS * sizeof(void *), GFP_KERNEL);
 	if (ng == NULL)
 		goto out;
 
@@ -106,23 +107,22 @@ struct net *copy_net_ns(unsigned long flags, struct net *old_net)
 
 	get_net(old_net);
 
-	if (!(flags & CLONE_NEWNET))
+	if (!(flags & CLONE_NEWNET)) // 如果不创建新的网络命名空间, 直接返回旧的命名空间
 		return old_net;
 
 	err = -ENOMEM;
-	new_net = net_alloc();
+	new_net = net_alloc(); // 申请一个新的网络命名空间
 	if (!new_net)
 		goto out;
 
 	mutex_lock(&net_mutex);
-	err = setup_net(new_net);
+	err = setup_net(new_net); // 初始化网络命名空间
 	if (err)
 		goto out_unlock;
 
 	rtnl_lock();
-	list_add_tail(&new_net->list, &net_namespace_list);
+	list_add_tail(&new_net->list, &net_namespace_list); // 把新创建的命名空间添加到 net_namespace_list 列表中
 	rtnl_unlock();
-
 
 out_unlock:
 	mutex_unlock(&net_mutex);
@@ -132,6 +132,7 @@ out:
 		net_free(new_net);
 		new_net = ERR_PTR(err);
 	}
+
 	return new_net;
 }
 
@@ -191,10 +192,10 @@ static int __init net_ns_init(void)
 	int err;
 
 	printk(KERN_INFO "net_namespace: %zd bytes\n", sizeof(struct net));
+
 #ifdef CONFIG_NET_NS
 	net_cachep = kmem_cache_create("net_namespace", sizeof(struct net),
-					SMP_CACHE_BYTES,
-					SLAB_PANIC, NULL);
+								   SMP_CACHE_BYTES, SLAB_PANIC, NULL);
 
 	/* Create workqueue for cleanup */
 	netns_wq = create_singlethread_workqueue("netns");
@@ -220,7 +221,7 @@ pure_initcall(net_ns_init);
 
 #ifdef CONFIG_NET_NS
 static int register_pernet_operations(struct list_head *list,
-				      struct pernet_operations *ops)
+									  struct pernet_operations *ops)
 {
 	struct net *net, *undo_net;
 	int error;

@@ -22,49 +22,53 @@ struct sock;
 struct ctl_table_header;
 struct net_generic;
 
+/*
+ * 一个网络命名空间包括:
+ *****************************************
+ * 1. 网络设备列表(dev_base_head)
+ * 2. 路由信息表(ipv4.fib_table_hash)
+ * 3. IPTables信息表(ipv4.iptable_filter)
+ *****************************************
+ */
 struct net {
-	atomic_t		count;		/* To decided when the network
-						 *  namespace should be freed.
-						 */
+	atomic_t				count;		/* To decided when the network namespace should be freed. */
 #ifdef NETNS_REFCNT_DEBUG
-	atomic_t		use_count;	/* To track references we
-						 * destroy on demand
-						 */
+	atomic_t				use_count;	/* To track references we destroy on demand */
 #endif
-	struct list_head	list;		/* list of network namespaces */
-	struct work_struct	work;		/* work struct for freeing */
+	struct list_head		list;		/* list of network namespaces */
+	struct work_struct		work;		/* work struct for freeing */
 
-	struct proc_dir_entry 	*proc_net;
-	struct proc_dir_entry 	*proc_net_stat;
+	struct proc_dir_entry	*proc_net;
+	struct proc_dir_entry	*proc_net_stat;
 
-	struct list_head	sysctl_table_headers;
+	struct list_head		sysctl_table_headers;
 
-	struct net_device       *loopback_dev;          /* The loopback */
+	struct net_device		*loopback_dev;		/* The loopback device */
 
-	struct list_head 	dev_base_head;
-	struct hlist_head 	*dev_name_head;
-	struct hlist_head	*dev_index_head;
+	struct list_head 		dev_base_head;		/* Devices list */
+	struct hlist_head 		*dev_name_head;		/* Devices HashTable by name */
+	struct hlist_head		*dev_index_head;	/* Devices HashTable by index */
 
 	/* core fib_rules */
-	struct list_head	rules_ops;
-	spinlock_t		rules_mod_lock;
+	struct list_head		rules_ops;
+	spinlock_t				rules_mod_lock;
 
-	struct sock 		*rtnl;			/* rtnetlink socket */
+	struct sock 			*rtnl;			/* rtnetlink socket */
 
-	struct netns_core	core;
-	struct netns_packet	packet;
-	struct netns_unix	unx;
-	struct netns_ipv4	ipv4;
+	struct netns_core		core;
+	struct netns_packet		packet;
+	struct netns_unix		unx;
+	struct netns_ipv4		ipv4;
 #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
-	struct netns_ipv6	ipv6;
+	struct netns_ipv6		ipv6;
 #endif
 #if defined(CONFIG_IP_DCCP) || defined(CONFIG_IP_DCCP_MODULE)
-	struct netns_dccp	dccp;
+	struct netns_dccp		dccp;
 #endif
 #ifdef CONFIG_NETFILTER
-	struct netns_xt		xt;
+	struct netns_xt			xt;
 #endif
-	struct net_generic	*gen;
+	struct net_generic		*gen;
 };
 
 
@@ -82,7 +86,8 @@ extern struct net *copy_net_ns(unsigned long flags, struct net *net_ns);
 
 #define INIT_NET_NS(net_ns)
 
-static inline struct net *copy_net_ns(unsigned long flags, struct net *net_ns)
+static inline struct net *
+copy_net_ns(unsigned long flags, struct net *net_ns)
 {
 	/* There is nothing to copy so this is a noop */
 	return net_ns;
@@ -212,8 +217,9 @@ extern void unregister_pernet_gen_device(int id, struct pernet_operations *);
 struct ctl_path;
 struct ctl_table;
 struct ctl_table_header;
-extern struct ctl_table_header *register_net_sysctl_table(struct net *net,
-	const struct ctl_path *path, struct ctl_table *table);
+extern struct ctl_table_header *
+register_net_sysctl_table(struct net *net, const struct ctl_path *path,
+						  struct ctl_table *table);
 extern void unregister_net_sysctl_table(struct ctl_table_header *header);
 
 #endif /* __NET_NET_NAMESPACE_H */

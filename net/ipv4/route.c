@@ -2280,7 +2280,7 @@ static int ip_mkroute_output(struct rtable **rp,
  */
 
 static int ip_route_output_slow(struct net *net, struct rtable **rp,
-				const struct flowi *oldflp)
+								const struct flowi *oldflp)
 {
 	u32 tos	= RT_FL_TOS(oldflp);
 	struct flowi fl = { .nl_u = { .ip4_u =
@@ -2327,8 +2327,9 @@ static int ip_route_output_slow(struct net *net, struct rtable **rp,
 		 */
 
 		if (oldflp->oif == 0
-		    && (ipv4_is_multicast(oldflp->fl4_dst) ||
-			oldflp->fl4_dst == htonl(0xFFFFFFFF))) {
+		    && (ipv4_is_multicast(oldflp->fl4_dst)
+				|| oldflp->fl4_dst == htonl(0xFFFFFFFF)))
+		{
 			/* Special hack: user can direct multicasts
 			   and limited broadcast via necessary interface
 			   without fiddling with IP_MULTICAST_IF or IP_PKTINFO.
@@ -2374,11 +2375,9 @@ static int ip_route_output_slow(struct net *net, struct rtable **rp,
 		}
 		if (!fl.fl4_src) {
 			if (ipv4_is_multicast(oldflp->fl4_dst))
-				fl.fl4_src = inet_select_addr(dev_out, 0,
-							      fl.fl4_scope);
+				fl.fl4_src = inet_select_addr(dev_out, 0, fl.fl4_scope);
 			else if (!oldflp->fl4_dst)
-				fl.fl4_src = inet_select_addr(dev_out, 0,
-							      RT_SCOPE_HOST);
+				fl.fl4_src = inet_select_addr(dev_out, 0, RT_SCOPE_HOST);
 		}
 	}
 
@@ -2418,8 +2417,7 @@ static int ip_route_output_slow(struct net *net, struct rtable **rp,
 			 */
 
 			if (fl.fl4_src == 0)
-				fl.fl4_src = inet_select_addr(dev_out, 0,
-							      RT_SCOPE_LINK);
+				fl.fl4_src = inet_select_addr(dev_out, 0, RT_SCOPE_LINK);
 			res.type = RTN_UNICAST;
 			goto make_route;
 		}
@@ -2462,10 +2460,8 @@ static int ip_route_output_slow(struct net *net, struct rtable **rp,
 	dev_hold(dev_out);
 	fl.oif = dev_out->ifindex;
 
-
 make_route:
 	err = ip_mkroute_output(rp, &res, &fl, oldflp, dev_out, flags);
-
 
 	if (free_res)
 		fib_res_put(&res);
@@ -2475,7 +2471,7 @@ out:	return err;
 }
 
 int __ip_route_output_key(struct net *net, struct rtable **rp,
-			  const struct flowi *flp)
+						  const struct flowi *flp)
 {
 	unsigned hash;
 	struct rtable *rth;
@@ -2569,7 +2565,7 @@ static int ipv4_dst_blackhole(struct rtable **rp, struct flowi *flp)
 }
 
 int ip_route_output_flow(struct net *net, struct rtable **rp, struct flowi *flp,
-			 struct sock *sk, int flags)
+						 struct sock *sk, int flags)
 {
 	int err;
 

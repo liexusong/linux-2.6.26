@@ -47,8 +47,9 @@ static inline struct nsproxy *clone_nsproxy(struct nsproxy *orig)
  * Return the newly created nsproxy.  Do not attach this to the task,
  * leave it to the caller to do proper locking and attach it to task.
  */
-static struct nsproxy *create_new_namespaces(unsigned long flags,
-			struct task_struct *tsk, struct fs_struct *new_fs)
+static struct nsproxy *
+create_new_namespaces(unsigned long flags, struct task_struct *tsk,
+					  struct fs_struct *new_fs)
 {
 	struct nsproxy *new_nsp;
 	int err;
@@ -191,7 +192,8 @@ void free_nsproxy(struct nsproxy *ns)
  * On success, returns the new nsproxy.
  */
 int unshare_nsproxy_namespaces(unsigned long unshare_flags,
-		struct nsproxy **new_nsp, struct fs_struct *new_fs)
+							   struct nsproxy **new_nsp,
+							   struct fs_struct *new_fs)
 {
 	int err = 0;
 
