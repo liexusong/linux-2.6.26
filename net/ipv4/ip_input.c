@@ -375,7 +375,8 @@ drop:
 /*
  * 	Main IP Receive routine.
  */
-int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt, struct net_device *orig_dev)
+int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt,
+		   struct net_device *orig_dev)
 {
 	struct iphdr *iph;
 	u32 len;
@@ -439,8 +440,7 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt, 
 	/* Remove any debris in the socket control block */
 	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
 
-	return NF_HOOK(PF_INET, NF_INET_PRE_ROUTING, skb, dev, NULL,
-		       ip_rcv_finish);
+	return NF_HOOK(PF_INET, NF_INET_PRE_ROUTING, skb, dev, NULL, ip_rcv_finish);
 
 inhdr_error:
 	IP_INC_STATS_BH(IPSTATS_MIB_INHDRERRORS);

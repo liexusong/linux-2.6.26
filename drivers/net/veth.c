@@ -21,11 +21,11 @@
 #define DRV_VERSION	"1.0"
 
 struct veth_net_stats {
-	unsigned long	rx_packets;
-	unsigned long	tx_packets;
-	unsigned long	rx_bytes;
-	unsigned long	tx_bytes;
-	unsigned long	tx_dropped;
+	unsigned long rx_packets;
+	unsigned long tx_packets;
+	unsigned long rx_bytes;
+	unsigned long tx_bytes;
+	unsigned long tx_dropped;
 };
 
 struct veth_priv {
@@ -105,6 +105,7 @@ static u32 veth_get_rx_csum(struct net_device *dev)
 	struct veth_priv *priv;
 
 	priv = netdev_priv(dev);
+
 	return priv->ip_summed == CHECKSUM_UNNECESSARY;
 }
 
@@ -114,6 +115,7 @@ static int veth_set_rx_csum(struct net_device *dev, u32 data)
 
 	priv = netdev_priv(dev);
 	priv->ip_summed = data ? CHECKSUM_UNNECESSARY : CHECKSUM_NONE;
+
 	return 0;
 }
 
@@ -169,7 +171,11 @@ static int veth_xmit(struct sk_buff *skb, struct net_device *dev)
 		goto outf;
 
 	skb->pkt_type = PACKET_HOST;
-	skb->protocol = eth_type_trans(skb, rcv); // 设置数据包的接收设备为设备对的对端
+
+	// 1. 获取数据包的网络层协议类型
+	// 2. 设置数据包的接收设备为veth的对端设备,
+	//    这样数据包当进入协议栈时就会使用veth对端设备所在网络命名空间
+	skb->protocol = eth_type_trans(skb, rcv);
 
 	if (dev->features & NETIF_F_NO_CSUM)
 		skb->ip_summed = rcv_priv->ip_summed;
@@ -189,7 +195,7 @@ static int veth_xmit(struct sk_buff *skb, struct net_device *dev)
 	stats->rx_bytes += length;
 	stats->rx_packets++;
 
-	netif_rx(skb); // 上送到协议栈
+	netif_rx(skb); // 上送到TCP/IP协议栈
 	return 0;
 
 outf:
