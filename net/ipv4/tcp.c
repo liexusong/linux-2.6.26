@@ -2630,9 +2630,9 @@ void __init tcp_init(void)
 	BUILD_BUG_ON(sizeof(struct tcp_skb_cb) > sizeof(skb->cb));
 
 	tcp_hashinfo.bind_bucket_cachep =
-		kmem_cache_create("tcp_bind_bucket",
-				  sizeof(struct inet_bind_bucket), 0,
-				  SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+			kmem_cache_create("tcp_bind_bucket",
+							  sizeof(struct inet_bind_bucket), 0,
+							  SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
 
 	/* Size and allocate the main established and bind bucket
 	 * hash tables.
@@ -2640,33 +2640,39 @@ void __init tcp_init(void)
 	 * The methodology is similar to that of the buffer cache.
 	 */
 	tcp_hashinfo.ehash =
-		alloc_large_system_hash("TCP established",
-					sizeof(struct inet_ehash_bucket),
-					thash_entries,
-					(num_physpages >= 128 * 1024) ?
-					13 : 15,
-					0,
-					&tcp_hashinfo.ehash_size,
-					NULL,
-					thash_entries ? 0 : 512 * 1024);
+			alloc_large_system_hash("TCP established",
+									sizeof(struct inet_ehash_bucket),
+									thash_entries,
+									(num_physpages >= 128 * 1024) ?
+									13 : 15,
+									0,
+									&tcp_hashinfo.ehash_size,
+									NULL,
+									thash_entries ? 0 : 512 * 1024);
+
 	tcp_hashinfo.ehash_size = 1 << tcp_hashinfo.ehash_size;
+
 	for (i = 0; i < tcp_hashinfo.ehash_size; i++) {
 		INIT_HLIST_HEAD(&tcp_hashinfo.ehash[i].chain);
 		INIT_HLIST_HEAD(&tcp_hashinfo.ehash[i].twchain);
 	}
+
 	if (inet_ehash_locks_alloc(&tcp_hashinfo))
 		panic("TCP: failed to alloc ehash_locks");
+
 	tcp_hashinfo.bhash =
-		alloc_large_system_hash("TCP bind",
-					sizeof(struct inet_bind_hashbucket),
-					tcp_hashinfo.ehash_size,
-					(num_physpages >= 128 * 1024) ?
-					13 : 15,
-					0,
-					&tcp_hashinfo.bhash_size,
-					NULL,
-					64 * 1024);
+			alloc_large_system_hash("TCP bind",
+									sizeof(struct inet_bind_hashbucket),
+									tcp_hashinfo.ehash_size,
+									(num_physpages >= 128 * 1024) ?
+									13 : 15,
+									0,
+									&tcp_hashinfo.bhash_size,
+									NULL,
+									64 * 1024);
+
 	tcp_hashinfo.bhash_size = 1 << tcp_hashinfo.bhash_size;
+
 	for (i = 0; i < tcp_hashinfo.bhash_size; i++) {
 		spin_lock_init(&tcp_hashinfo.bhash[i].lock);
 		INIT_HLIST_HEAD(&tcp_hashinfo.bhash[i].chain);
@@ -2675,10 +2681,12 @@ void __init tcp_init(void)
 	/* Try to be a bit smarter and adjust defaults depending
 	 * on available memory.
 	 */
-	for (order = 0; ((1 << order) << PAGE_SHIFT) <
-			(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket));
-			order++)
+	for (order = 0;
+		 ((1 << order) << PAGE_SHIFT) <
+				(tcp_hashinfo.bhash_size * sizeof(struct inet_bind_hashbucket));
+		 order++)
 		;
+
 	if (order >= 4) {
 		tcp_death_row.sysctl_max_tw_buckets = 180000;
 		sysctl_tcp_max_orphans = 4096 << (order - 4);
@@ -2713,8 +2721,7 @@ void __init tcp_init(void)
 	sysctl_tcp_rmem[1] = 87380;
 	sysctl_tcp_rmem[2] = max(87380, max_share);
 
-	printk(KERN_INFO "TCP: Hash tables configured "
-	       "(established %d bind %d)\n",
+	printk(KERN_INFO "TCP: Hash tables configured (established %d bind %d)\n",
 	       tcp_hashinfo.ehash_size, tcp_hashinfo.bhash_size);
 
 	tcp_register_congestion_control(&tcp_reno);

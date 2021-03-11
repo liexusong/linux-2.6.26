@@ -87,12 +87,10 @@ int sysctl_tcp_low_latency __read_mostly;
 
 
 #ifdef CONFIG_TCP_MD5SIG
-static struct tcp_md5sig_key *tcp_v4_md5_do_lookup(struct sock *sk,
-						   __be32 addr);
+static struct tcp_md5sig_key *tcp_v4_md5_do_lookup(struct sock *sk,__be32 addr);
 static int tcp_v4_do_calc_md5_hash(char *md5_hash, struct tcp_md5sig_key *key,
-				   __be32 saddr, __be32 daddr,
-				   struct tcphdr *th, int protocol,
-				   unsigned int tcplen);
+								   __be32 saddr,__be32 daddr,struct tcphdr *th,
+								    int protocol, unsigned int tcplen);
 #endif
 
 struct inet_hashinfo __cacheline_aligned tcp_hashinfo = {

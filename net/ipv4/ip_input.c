@@ -207,6 +207,7 @@ static int ip_local_deliver_finish(struct sk_buff *skb)
 	skb_reset_transport_header(skb);
 
 	rcu_read_lock();
+
 	{
 		int protocol = ip_hdr(skb)->protocol;
 		int hash, raw;
@@ -245,6 +246,7 @@ static int ip_local_deliver_finish(struct sk_buff *skb)
 			kfree_skb(skb);
 		}
 	}
+
  out:
 	rcu_read_unlock();
 
@@ -266,7 +268,7 @@ int ip_local_deliver(struct sk_buff *skb)
 	}
 
 	return NF_HOOK(PF_INET, NF_INET_LOCAL_IN, skb, skb->dev, NULL,
-		       ip_local_deliver_finish);
+				   ip_local_deliver_finish);
 }
 
 static inline int ip_rcv_options(struct sk_buff *skb)
