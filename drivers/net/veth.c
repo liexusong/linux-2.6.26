@@ -52,9 +52,9 @@ static int veth_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 {
 	cmd->supported		= 0;
 	cmd->advertising	= 0;
-	cmd->speed		= SPEED_10000;
-	cmd->duplex		= DUPLEX_FULL;
-	cmd->port		= PORT_TP;
+	cmd->speed			= SPEED_10000;
+	cmd->duplex			= DUPLEX_FULL;
+	cmd->port			= PORT_TP;
 	cmd->phy_address	= 0;
 	cmd->transceiver	= XCVR_INTERNAL;
 	cmd->autoneg		= AUTONEG_DISABLE;
@@ -63,7 +63,8 @@ static int veth_get_settings(struct net_device *dev, struct ethtool_cmd *cmd)
 	return 0;
 }
 
-static void veth_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
+static void
+veth_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
 {
 	strcpy(info->driver, DRV_NAME);
 	strcpy(info->version, DRV_VERSION);
@@ -90,7 +91,8 @@ static int veth_get_sset_count(struct net_device *dev, int sset)
 }
 
 static void veth_get_ethtool_stats(struct net_device *dev,
-		struct ethtool_stats *stats, u64 *data)
+									struct ethtool_stats *stats,
+									u64 *data)
 {
 	struct veth_priv *priv;
 
@@ -132,22 +134,21 @@ static int veth_set_tx_csum(struct net_device *dev, u32 data)
 static struct ethtool_ops veth_ethtool_ops = {
 	.get_settings		= veth_get_settings,
 	.get_drvinfo		= veth_get_drvinfo,
-	.get_link		= ethtool_op_get_link,
+	.get_link			= ethtool_op_get_link,
 	.get_rx_csum		= veth_get_rx_csum,
 	.set_rx_csum		= veth_set_rx_csum,
 	.get_tx_csum		= veth_get_tx_csum,
 	.set_tx_csum		= veth_set_tx_csum,
-	.get_sg			= ethtool_op_get_sg,
-	.set_sg			= ethtool_op_set_sg,
+	.get_sg				= ethtool_op_get_sg,
+	.set_sg				= ethtool_op_set_sg,
 	.get_strings		= veth_get_strings,
 	.get_sset_count		= veth_get_sset_count,
 	.get_ethtool_stats	= veth_get_ethtool_stats,
 };
 
 /*
- * xmit
+ * 发送数据包接口
  */
-
 static int veth_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	struct net_device *rcv = NULL;
@@ -168,7 +169,8 @@ static int veth_xmit(struct sk_buff *skb, struct net_device *dev)
 		goto outf;
 
 	skb->pkt_type = PACKET_HOST;
-	skb->protocol = eth_type_trans(skb, rcv);
+	skb->protocol = eth_type_trans(skb, rcv); // 设置数据包的接收设备为设备对的对端
+
 	if (dev->features & NETIF_F_NO_CSUM)
 		skb->ip_summed = rcv_priv->ip_summed;
 
@@ -187,7 +189,7 @@ static int veth_xmit(struct sk_buff *skb, struct net_device *dev)
 	stats->rx_bytes += length;
 	stats->rx_packets++;
 
-	netif_rx(skb);
+	netif_rx(skb); // 上送到协议栈
 	return 0;
 
 outf:
@@ -199,7 +201,6 @@ outf:
 /*
  * general routines
  */
-
 static struct net_device_stats *veth_get_stats(struct net_device *dev)
 {
 	struct veth_priv *priv;
@@ -298,7 +299,7 @@ static void veth_change_state(struct net_device *dev)
 }
 
 static int veth_device_event(struct notifier_block *unused,
-			     unsigned long event, void *ptr)
+							 unsigned long event, void *ptr)
 {
 	struct net_device *dev = ptr;
 
@@ -336,7 +337,7 @@ static int veth_validate(struct nlattr *tb[], struct nlattr *data[])
 static struct rtnl_link_ops veth_link_ops;
 
 static int veth_newlink(struct net_device *dev,
-			 struct nlattr *tb[], struct nlattr *data[])
+						 struct nlattr *tb[], struct nlattr *data[])
 {
 	int err;
 	struct net_device *peer;
