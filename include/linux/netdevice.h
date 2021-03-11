@@ -520,13 +520,13 @@ struct net_device
 #define NETIF_F_LRO				32768	/* large receive offload */
 
 	/* Segmentation offload features */
-#define NETIF_F_GSO_SHIFT	16
-#define NETIF_F_GSO_MASK	0xffff0000
-#define NETIF_F_TSO			(SKB_GSO_TCPV4 << NETIF_F_GSO_SHIFT)
-#define NETIF_F_UFO			(SKB_GSO_UDP << NETIF_F_GSO_SHIFT)
-#define NETIF_F_GSO_ROBUST	(SKB_GSO_DODGY << NETIF_F_GSO_SHIFT)
-#define NETIF_F_TSO_ECN		(SKB_GSO_TCP_ECN << NETIF_F_GSO_SHIFT)
-#define NETIF_F_TSO6		(SKB_GSO_TCPV6 << NETIF_F_GSO_SHIFT)
+#define NETIF_F_GSO_SHIFT		16
+#define NETIF_F_GSO_MASK		0xffff0000
+#define NETIF_F_TSO				(SKB_GSO_TCPV4 << NETIF_F_GSO_SHIFT)
+#define NETIF_F_UFO				(SKB_GSO_UDP << NETIF_F_GSO_SHIFT)
+#define NETIF_F_GSO_ROBUST		(SKB_GSO_DODGY << NETIF_F_GSO_SHIFT)
+#define NETIF_F_TSO_ECN			(SKB_GSO_TCP_ECN << NETIF_F_GSO_SHIFT)
+#define NETIF_F_TSO6			(SKB_GSO_TCPV6 << NETIF_F_GSO_SHIFT)
 
 	/* List of features with software fallbacks. */
 #define NETIF_F_GSO_SOFTWARE	(NETIF_F_TSO | NETIF_F_TSO_ECN | NETIF_F_TSO6)
@@ -537,14 +537,14 @@ struct net_device
 #define NETIF_F_V6_CSUM			(NETIF_F_GEN_CSUM | NETIF_F_IPV6_CSUM)
 #define NETIF_F_ALL_CSUM		(NETIF_F_V4_CSUM | NETIF_F_V6_CSUM)
 
-	struct net_device	*next_sched;
+	struct net_device			*next_sched;
 
 	/* Interface index. Unique device identifier	*/
-	int					ifindex;
-	int					iflink;
+	int							ifindex;
+	int							iflink;
 
-	struct net_device_stats* (*get_stats)(struct net_device *dev);
-	struct net_device_stats	stats;
+	struct net_device_stats * 	(*get_stats)(struct net_device *dev);
+	struct net_device_stats		stats;
 
 #ifdef CONFIG_WIRELESS_EXT
 	/* List of functions to handle Wireless Extensions (instead of ioctl).
@@ -565,33 +565,33 @@ struct net_device
 	 */
 
 
-	unsigned int		flags;	/* interface flags (a la BSD)	*/
-	unsigned short		gflags;
-	unsigned short		priv_flags; /* Like 'flags' but invisible to userspace. */
-	unsigned short		padded;	/* How much padding added by alloc_netdev() */
+	unsigned int			flags;	/* interface flags (a la BSD)	*/
+	unsigned short			gflags;
+	unsigned short			priv_flags; /* Like 'flags' but invisible to userspace. */
+	unsigned short			padded;	/* How much padding added by alloc_netdev() */
 
-	unsigned char		operstate; /* RFC2863 operstate */
-	unsigned char		link_mode; /* mapping policy to operstate */
+	unsigned char			operstate; /* RFC2863 operstate */
+	unsigned char			link_mode; /* mapping policy to operstate */
 
-	unsigned			mtu;	/* interface MTU value		*/
-	unsigned short		type;	/* interface hardware type	*/
-	unsigned short		hard_header_len;	/* hardware hdr length	*/
+	unsigned				mtu;	/* interface MTU value		*/
+	unsigned short			type;	/* interface hardware type	*/
+	unsigned short			hard_header_len;	/* hardware hdr length	*/
 
 	/* extra head- and tailroom the hardware may need, but not in all cases
 	 * can this be guaranteed, especially tailroom. Some cases also use
 	 * LL_MAX_HEADER instead to allocate the skb.
 	 */
-	unsigned short		needed_headroom;
-	unsigned short		needed_tailroom;
+	unsigned short			needed_headroom;
+	unsigned short			needed_tailroom;
 
-	struct net_device	*master; /* Pointer to master device of a group,
+	struct net_device		*master; /* Pointer to master device of a group,
 					  * which this device is member of.
 					  */
 
 	/* Interface address info. */
-	unsigned char		perm_addr[MAX_ADDR_LEN]; /* permanent hw address */
-	unsigned char		addr_len;	/* hardware address length	*/
-	unsigned short		dev_id;		/* for shared network cards */
+	unsigned char			perm_addr[MAX_ADDR_LEN]; /* permanent hw address */
+	unsigned char			addr_len;	/* hardware address length	*/
+	unsigned short			dev_id;		/* for shared network cards */
 
 	struct dev_addr_list	*uc_list;	/* Secondary unicast mac addresses */
 	int						uc_count;	/* Number of installed ucasts	*/
@@ -604,14 +604,14 @@ struct net_device
 
 	/* Protocol specific pointers */
 
-	void 			*atalk_ptr;	/* AppleTalk link 	*/
-	void			*ip_ptr;	/* IPv4 specific data	*/
-	void			*dn_ptr;        /* DECnet specific data */
-	void			*ip6_ptr;       /* IPv6 specific data */
-	void			*ec_ptr;	/* Econet specific data	*/
-	void			*ax25_ptr;	/* AX.25 specific data */
-	struct wireless_dev	*ieee80211_ptr;	/* IEEE 802.11 specific data,
-						   assign before registering */
+	void 					*atalk_ptr;	/* AppleTalk link 	*/
+	void					*ip_ptr;	/* IPv4 specific data	*/
+	void					*dn_ptr;	/* DECnet specific data */
+	void					*ip6_ptr;	/* IPv6 specific data */
+	void					*ec_ptr;	/* Econet specific data	*/
+	void					*ax25_ptr;	/* AX.25 specific data */
+	struct wireless_dev		*ieee80211_ptr;	/* IEEE 802.11 specific data,
+											   assign before registering */
 
 /*
  * Cache line mostly used on receive path (including eth_type_trans())
@@ -717,7 +717,7 @@ struct net_device
 
 #ifdef CONFIG_NET_NS
 	/* Network namespace this network device is inside */
-	struct net				*nd_net;
+	struct net				*nd_net; // 设备所属网络命名空间
 #endif
 
 	/* mid-layer private */
@@ -737,11 +737,11 @@ struct net_device
 	const struct rtnl_link_ops *rtnl_link_ops;
 
 	/* VLAN feature mask */
-	unsigned long vlan_features;
+	unsigned long				vlan_features;
 
 	/* for setting kernel sock attribute on TCP connection setup */
-#define GSO_MAX_SIZE	65536
-	unsigned int		gso_max_size;
+#define GSO_MAX_SIZE			65536
+	unsigned int				gso_max_size;
 
 	/* The TX queue control structures */
 	unsigned int				egress_subqueue_count;

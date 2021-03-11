@@ -1899,14 +1899,14 @@ static int ip_route_input_slow(struct sk_buff *skb, __be32 daddr, __be32 saddr,
 				      } },
 			    .mark = skb->mark,
 			    .iif = dev->ifindex };
-	unsigned	flags = 0;
-	u32		itag = 0;
-	struct rtable * rth;
-	unsigned	hash;
-	__be32		spec_dst;
-	int		err = -EINVAL;
-	int		free_res = 0;
-	struct net    * net = dev_net(dev);
+	unsigned flags = 0;
+	u32 itag = 0;
+	struct rtable *rth;
+	unsigned hash;
+	__be32 spec_dst;
+	int err = -EINVAL;
+	int free_res = 0;
+	struct net *net = dev_net(dev);
 
 	/* IP on this device is disabled. */
 
@@ -1952,8 +1952,8 @@ static int ip_route_input_slow(struct sk_buff *skb, __be32 daddr, __be32 saddr,
 	if (res.type == RTN_LOCAL) {
 		int result;
 		result = fib_validate_source(saddr, daddr, tos,
-					     net->loopback_dev->ifindex,
-					     dev, &spec_dst, &itag);
+									 net->loopback_dev->ifindex,
+									 dev, &spec_dst, &itag);
 		if (result < 0)
 			goto martian_source;
 		if (result)
@@ -2069,15 +2069,15 @@ martian_source:
 	goto e_inval;
 }
 
-int ip_route_input(struct sk_buff *skb, __be32 daddr, __be32 saddr,
-		   u8 tos, struct net_device *dev)
+int ip_route_input(struct sk_buff *skb, __be32 daddr, __be32 saddr, u8 tos,
+				   struct net_device *dev)
 {
 	struct rtable * rth;
-	unsigned	hash;
+	unsigned hash;
 	int iif = dev->ifindex;
 	struct net *net;
 
-	net = dev_net(dev);
+	net = dev_net(dev); // 设备对应的网络命名空间
 	tos &= IPTOS_RT_MASK;
 	hash = rt_hash(daddr, saddr, iif);
 

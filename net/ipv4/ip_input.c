@@ -333,7 +333,7 @@ static int ip_rcv_finish(struct sk_buff *skb)
 	 */
 	if (skb->dst == NULL) {
 		int err = ip_route_input(skb, iph->daddr, iph->saddr, iph->tos,
-					 skb->dev);
+								 skb->dev);
 		if (unlikely(err)) {
 			if (err == -EHOSTUNREACH)
 				IP_INC_STATS_BH(IPSTATS_MIB_INADDRERRORS);
@@ -348,9 +348,9 @@ static int ip_rcv_finish(struct sk_buff *skb)
 		struct ip_rt_acct *st = per_cpu_ptr(ip_rt_acct, smp_processor_id());
 		u32 idx = skb->dst->tclassid;
 		st[idx&0xFF].o_packets++;
-		st[idx&0xFF].o_bytes+=skb->len;
+		st[idx&0xFF].o_bytes += skb->len;
 		st[(idx>>16)&0xFF].i_packets++;
-		st[(idx>>16)&0xFF].i_bytes+=skb->len;
+		st[(idx>>16)&0xFF].i_bytes += skb->len;
 	}
 #endif
 

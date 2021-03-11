@@ -150,19 +150,19 @@ static void __NS8390_init(struct net_device *dev, int startp);
  *	card means that approach caused horrible problems like losing serial data
  *	at 38400 baud on some chips. Remember many 8390 nics on PCI were ISA
  *	chips with FPGA front ends.
- *	
+ *
  *	Ok the logic behind the 8390 is very simple:
- *	
+ *
  *	Things to know
  *		- IRQ delivery is asynchronous to the PCI bus
  *		- Blocking the local CPU IRQ via spin locks was too slow
  *		- The chip has register windows needing locking work
- *	
+ *
  *	So the path was once (I say once as people appear to have changed it
  *	in the mean time and it now looks rather bogus if the changes to use
  *	disable_irq_nosync_irqsave are disabling the local IRQ)
- *	
- *	
+ *
+ *
  *		Take the page lock
  *		Mask the IRQ on chip
  *		Disable the IRQ (but not mask locally- someone seems to have
@@ -170,22 +170,22 @@ static void __NS8390_init(struct net_device *dev, int startp);
  *			[This must be _nosync as the page lock may otherwise
  *				deadlock us]
  *		Drop the page lock and turn IRQs back on
- *		
+ *
  *		At this point an existing IRQ may still be running but we can't
  *		get a new one
- *	
+ *
  *		Take the lock (so we know the IRQ has terminated) but don't mask
  *	the IRQs on the processor
  *		Set irqlock [for debug]
- *	
+ *
  *		Transmit (slow as ****)
- *	
+ *
  *		re-enable the IRQ
- *	
- *	
+ *
+ *
  *	We have to use disable_irq because otherwise you will get delayed
  *	interrupts on the APIC bus deadlocking the transmit path.
- *	
+ *
  *	Quite hairy but the chip simply wasn't designed for SMP and you can't
  *	even ACK an interrupt without risking corrupting other parallel
  *	activities on the chip." [lkml, 25 Jul 2007]
@@ -447,9 +447,8 @@ static irqreturn_t __ei_interrupt(int irq, void *dev_id)
 
 	spin_lock(&ei_local->page_lock);
 
-	if (ei_local->irqlock)
-	{
-#if 1 /* This might just be an interrupt for a PCI device sharing this line */
+	if (ei_local->irqlock) {
+#if 0 /* This might just be an interrupt for a PCI device sharing this line */
 		/* The "irqlock" check is only for testing. */
 		printk(ei_local->irqlock
 			   ? "%s: Interrupted while interrupts are masked! isr=%#2x imr=%#2x.\n"
@@ -464,8 +463,8 @@ static irqreturn_t __ei_interrupt(int irq, void *dev_id)
 	/* Change to page 0 and read the intr status reg. */
 	ei_outb_p(E8390_NODMA+E8390_PAGE0, e8390_base + E8390_CMD);
 	if (ei_debug > 3)
-		printk(KERN_DEBUG "%s: interrupt(isr=%#2.2x).\n", dev->name,
-			   ei_inb_p(e8390_base + EN0_ISR));
+		printk(KERN_DEBUG "%s: interrupt(isr=%#2.2x).\n",
+			   dev->name, ei_inb_p(e8390_base + EN0_ISR));
 
 	/* !!Assumption!! -- we stay in page 0.	 Don't break this. */
 	while ((interrupts = ei_inb_p(e8390_base + EN0_ISR)) != 0
@@ -478,52 +477,55 @@ static irqreturn_t __ei_interrupt(int irq, void *dev_id)
 			interrupts = 0;
 			break;
 		}
-		if (interrupts & ENISR_OVER)
+
+		if (interrupts & ENISR_OVER) {
 			ei_rx_overrun(dev);
-		else if (interrupts & (ENISR_RX+ENISR_RX_ERR))
-		{
+		} else if (interrupts & (ENISR_RX+ENISR_RX_ERR)) {
 			/* Got a good (?) packet. */
 			ei_receive(dev);
 		}
-		/* Push the next to-transmit packet through. */
-		if (interrupts & ENISR_TX)
-			ei_tx_intr(dev);
-		else if (interrupts & ENISR_TX_ERR)
-			ei_tx_err(dev);
 
-		if (interrupts & ENISR_COUNTERS)
-		{
-			ei_local->stat.rx_frame_errors += ei_inb_p(e8390_base + EN0_COUNTER0);
-			ei_local->stat.rx_crc_errors   += ei_inb_p(e8390_base + EN0_COUNTER1);
-			ei_local->stat.rx_missed_errors+= ei_inb_p(e8390_base + EN0_COUNTER2);
+		/* Push the next to-transmit packet through. */
+		if (interrupts & ENISR_TX) {
+			ei_tx_intr(dev);
+		} else if (interrupts & ENISR_TX_ERR) {
+			ei_tx_err(dev);
+		}
+
+		if (interrupts & ENISR_COUNTERS) {
+			ei_local->stat.rx_frame_errors  += ei_inb_p(e8390_base + EN0_COUNTER0);
+			ei_local->stat.rx_crc_errors    += ei_inb_p(e8390_base + EN0_COUNTER1);
+			ei_local->stat.rx_missed_errors += ei_inb_p(e8390_base + EN0_COUNTER2);
 			ei_outb_p(ENISR_COUNTERS, e8390_base + EN0_ISR); /* Ack intr. */
 		}
 
 		/* Ignore any RDC interrupts that make it back to here. */
-		if (interrupts & ENISR_RDC)
-		{
+		if (interrupts & ENISR_RDC) {
 			ei_outb_p(ENISR_RDC, e8390_base + EN0_ISR);
 		}
 
 		ei_outb_p(E8390_NODMA+E8390_PAGE0+E8390_START, e8390_base + E8390_CMD);
 	}
 
-	if (interrupts && ei_debug)
-	{
+	if (interrupts && ei_debug) {
 		ei_outb_p(E8390_NODMA+E8390_PAGE0+E8390_START, e8390_base + E8390_CMD);
-		if (nr_serviced >= MAX_SERVICE)
-		{
+		if (nr_serviced >= MAX_SERVICE) {
 			/* 0xFF is valid for a card removal */
-			if(interrupts!=0xFF)
-				printk(KERN_WARNING "%s: Too much work at interrupt, status %#2.2x\n",
-				   dev->name, interrupts);
+			if (interrupts != 0xFF)
+				printk(KERN_WARNING
+					   "%s: Too much work at interrupt, status %#2.2x\n",
+					   dev->name, interrupts);
 			ei_outb_p(ENISR_ALL, e8390_base + EN0_ISR); /* Ack. most intrs. */
 		} else {
-			printk(KERN_WARNING "%s: unknown interrupt %#2x\n", dev->name, interrupts);
+			printk(KERN_WARNING
+				   "%s: unknown interrupt %#2x\n",
+				   dev->name, interrupts);
 			ei_outb_p(0xff, e8390_base + EN0_ISR); /* Ack. all intrs. */
 		}
 	}
+
 	spin_unlock(&ei_local->page_lock);
+
 	return IRQ_RETVAL(nr_serviced > 0);
 }
 
@@ -686,8 +688,7 @@ static void ei_receive(struct net_device *dev)
 	struct e8390_pkt_hdr rx_frame;
 	int num_rx_pages = ei_local->stop_page-ei_local->rx_start_page;
 
-	while (++rx_pkt_count < 10)
-	{
+	while (++rx_pkt_count < 10) {
 		int pkt_len, pkt_stat;
 
 		/* Get the rx page (incoming packet pointer). */
@@ -706,7 +707,9 @@ static void ei_receive(struct net_device *dev)
 		   Keep quiet if it looks like a card removal. One problem here
 		   is that some clones crash in roughly the same way.
 		 */
-		if (ei_debug > 0  &&  this_frame != ei_local->current_page && (this_frame!=0x0 || rxing_page!=0xFF))
+		if (ei_debug > 0
+			&& this_frame != ei_local->current_page
+			&& (this_frame!=0x0 || rxing_page!=0xFF))
 			printk(KERN_ERR "%s: mismatched read page pointers %2x vs %2x.\n",
 				   dev->name, this_frame, ei_local->current_page);
 
@@ -727,60 +730,69 @@ static void ei_receive(struct net_device *dev)
 		if (rx_frame.next != next_frame
 			&& rx_frame.next != next_frame + 1
 			&& rx_frame.next != next_frame - num_rx_pages
-			&& rx_frame.next != next_frame + 1 - num_rx_pages) {
+			&& rx_frame.next != next_frame + 1 - num_rx_pages)
+		{
 			ei_local->current_page = rxing_page;
 			ei_outb(ei_local->current_page-1, e8390_base+EN0_BOUNDARY);
 			ei_local->stat.rx_errors++;
 			continue;
 		}
 
-		if (pkt_len < 60  ||  pkt_len > 1518)
-		{
+		if (pkt_len < 60 || pkt_len > 1518) {
 			if (ei_debug)
-				printk(KERN_DEBUG "%s: bogus packet size: %d, status=%#2x nxpg=%#2x.\n",
+				printk(KERN_DEBUG
+					   "%s: bogus packet size: %d, status=%#2x nxpg=%#2x.\n",
 					   dev->name, rx_frame.count, rx_frame.status,
 					   rx_frame.next);
+
 			ei_local->stat.rx_errors++;
 			ei_local->stat.rx_length_errors++;
-		}
-		 else if ((pkt_stat & 0x0F) == ENRSR_RXOK)
-		{
+
+		} else if ((pkt_stat & 0x0F) == ENRSR_RXOK) {
 			struct sk_buff *skb;
 
 			skb = dev_alloc_skb(pkt_len+2);
-			if (skb == NULL)
-			{
+			if (skb == NULL) {
 				if (ei_debug > 1)
-					printk(KERN_DEBUG "%s: Couldn't allocate a sk_buff of size %d.\n",
+					printk(KERN_DEBUG
+						   "%s: Couldn't allocate a sk_buff of size %d.\n",
 						   dev->name, pkt_len);
+
 				ei_local->stat.rx_dropped++;
+
 				break;
-			}
-			else
-			{
-				skb_reserve(skb,2);	/* IP headers on 16 byte boundaries */
+
+			} else {
+				skb_reserve(skb, 2);	/* IP headers on 16 byte boundaries */
 				skb_put(skb, pkt_len);	/* Make room */
-				ei_block_input(dev, pkt_len, skb, current_offset + sizeof(rx_frame));
-				skb->protocol=eth_type_trans(skb,dev);
+
+				ei_block_input(dev, pkt_len, skb,
+							   current_offset + sizeof(rx_frame));
+
+				skb->protocol = eth_type_trans(skb,dev);
+
 				netif_rx(skb);
+
 				dev->last_rx = jiffies;
+
 				ei_local->stat.rx_packets++;
 				ei_local->stat.rx_bytes += pkt_len;
 				if (pkt_stat & ENRSR_PHY)
 					ei_local->stat.multicast++;
 			}
-		}
-		else
-		{
+		} else {
 			if (ei_debug)
-				printk(KERN_DEBUG "%s: bogus packet: status=%#2x nxpg=%#2x size=%d\n",
+				printk(KERN_DEBUG
+					   "%s: bogus packet: status=%#2x nxpg=%#2x size=%d\n",
 					   dev->name, rx_frame.status, rx_frame.next,
 					   rx_frame.count);
+
 			ei_local->stat.rx_errors++;
 			/* NB: The NIC counts CRC, frame and missed errors. */
 			if (pkt_stat & ENRSR_FO)
 				ei_local->stat.rx_fifo_errors++;
 		}
+
 		next_frame = rx_frame.next;
 
 		/* This _should_ never happen: it's here for avoiding bad clones. */
