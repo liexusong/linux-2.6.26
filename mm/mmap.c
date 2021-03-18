@@ -1455,15 +1455,17 @@ void arch_unmap_area_topdown(struct mm_struct *mm, unsigned long addr)
 }
 
 unsigned long
-get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
-		unsigned long pgoff, unsigned long flags)
+get_unmapped_area(struct file *file, unsigned long addr,
+				  unsigned long len, unsigned long pgoff,
+				  unsigned long flags)
 {
 	unsigned long (*get_area)(struct file *, unsigned long,
-				  unsigned long, unsigned long, unsigned long);
+							  unsigned long, unsigned long, unsigned long);
 
 	get_area = current->mm->get_unmapped_area;
 	if (file && file->f_op && file->f_op->get_unmapped_area)
 		get_area = file->f_op->get_unmapped_area;
+
 	addr = get_area(file, addr, len, pgoff, flags);
 	if (IS_ERR_VALUE(addr))
 		return addr;
@@ -1479,7 +1481,8 @@ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
 EXPORT_SYMBOL(get_unmapped_area);
 
 /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
-struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr)
+struct vm_area_struct *
+find_vma(struct mm_struct * mm, unsigned long addr)
 {
 	struct vm_area_struct *vma = NULL;
 
@@ -1519,7 +1522,7 @@ EXPORT_SYMBOL(find_vma);
 /* Same as find_vma, but also return a pointer to the previous VMA in *pprev. */
 struct vm_area_struct *
 find_vma_prev(struct mm_struct *mm, unsigned long addr,
-			struct vm_area_struct **pprev)
+			  struct vm_area_struct **pprev)
 {
 	struct vm_area_struct *vma = NULL, *prev = NULL;
 	struct rb_node * rb_node;
@@ -1556,7 +1559,9 @@ out:
  * update accounting. This is shared with both the
  * grow-up and grow-down cases.
  */
-static int acct_stack_growth(struct vm_area_struct * vma, unsigned long size, unsigned long grow)
+static int
+acct_stack_growth(struct vm_area_struct * vma, unsigned long size,
+				  unsigned long grow)
 {
 	struct mm_struct *mm = vma->vm_mm;
 	struct rlimit *rlim = current->signal->rlim;
@@ -1657,8 +1662,8 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
 /*
  * vma is the first one with address < vma->vm_start.  Have to extend vma.
  */
-static inline int expand_downwards(struct vm_area_struct *vma,
-				   unsigned long address)
+static inline int
+expand_downwards(struct vm_area_struct *vma, unsigned long address)
 {
 	int error;
 
@@ -2146,8 +2151,9 @@ int insert_vm_struct(struct mm_struct * mm, struct vm_area_struct * vma)
  * Copy the vma structure to a new location in the same mm,
  * prior to moving page table entries, to effect an mremap move.
  */
-struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
-	unsigned long addr, unsigned long len, pgoff_t pgoff)
+struct vm_area_struct *
+copy_vma(struct vm_area_struct **vmap, unsigned long addr, unsigned long len,
+		 pgoff_t pgoff)
 {
 	struct vm_area_struct *vma = *vmap;
 	unsigned long vma_start = vma->vm_start;
@@ -2216,8 +2222,8 @@ int may_expand_vm(struct mm_struct *mm, unsigned long npages)
 }
 
 
-static int special_mapping_fault(struct vm_area_struct *vma,
-				struct vm_fault *vmf)
+static int
+special_mapping_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	pgoff_t pgoff;
 	struct page **pages;
@@ -2264,9 +2270,9 @@ static struct vm_operations_struct special_mapping_vmops = {
  * The array pointer and the pages it points to are assumed to stay alive
  * for as long as this mapping might exist.
  */
-int install_special_mapping(struct mm_struct *mm,
-			    unsigned long addr, unsigned long len,
-			    unsigned long vm_flags, struct page **pages)
+int install_special_mapping(struct mm_struct *mm, unsigned long addr,
+							unsigned long len, unsigned long vm_flags,
+							struct page **pages)
 {
 	struct vm_area_struct *vma;
 
