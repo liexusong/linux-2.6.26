@@ -3242,15 +3242,18 @@ quit_polling:
 		netif_rx_complete(netdev, napi);
 
 		wr32(E1000_EIMS, rx_ring->eims_value);
-		if ((adapter->itr_setting & 3) && !rx_ring->no_itr_adjust &&
-		    (rx_ring->total_packets > IGB_DYN_ITR_PACKET_THRESHOLD)) {
-			int mean_size = rx_ring->total_bytes /
-					rx_ring->total_packets;
+
+		if ((adapter->itr_setting & 3)
+			&& !rx_ring->no_itr_adjust
+		    && (rx_ring->total_packets > IGB_DYN_ITR_PACKET_THRESHOLD))
+		{
+			int mean_size = rx_ring->total_bytes / rx_ring->total_packets;
 			if (mean_size < IGB_DYN_ITR_LENGTH_LOW)
 				igb_raise_rx_eitr(adapter, rx_ring);
 			else if (mean_size > IGB_DYN_ITR_LENGTH_HIGH)
 				igb_lower_rx_eitr(adapter, rx_ring);
 		}
+
 		return 0;
 	}
 
@@ -3298,8 +3301,7 @@ static bool igb_clean_tx_irq(struct igb_adapter *adapter,
 				/* gso_segs is currently only valid for tcp */
 				segs = skb_shinfo(skb)->gso_segs ?: 1;
 				/* multiply data chunks by size of headers */
-				bytecount = ((segs - 1) * skb_headlen(skb)) +
-					    skb->len;
+				bytecount = ((segs - 1) * skb_headlen(skb)) + skb->len;
 				total_packets += segs;
 				total_bytes += bytecount;
 			}
@@ -3586,8 +3588,8 @@ out:
  * @adapter: address of board private structure
  **/
 static void igb_alloc_rx_buffers_adv(struct igb_adapter *adapter,
-				     struct igb_ring *rx_ring,
-				     int cleaned_count)
+									 struct igb_ring *rx_ring,
+									 int cleaned_count)
 {
 	struct net_device *netdev = adapter->netdev;
 	struct pci_dev *pdev = adapter->pdev;
@@ -3622,6 +3624,7 @@ static void igb_alloc_rx_buffers_adv(struct igb_adapter *adapter,
 				bufsz = adapter->rx_ps_hdr_size;
 			else
 				bufsz = adapter->rx_buffer_len;
+
 			bufsz += NET_IP_ALIGN;
 			skb = netdev_alloc_skb(netdev, bufsz);
 
@@ -3637,20 +3640,17 @@ static void igb_alloc_rx_buffers_adv(struct igb_adapter *adapter,
 			skb_reserve(skb, NET_IP_ALIGN);
 
 			buffer_info->skb = skb;
-			buffer_info->dma = pci_map_single(pdev, skb->data,
-							  bufsz,
-							  PCI_DMA_FROMDEVICE);
+			buffer_info->dma = pci_map_single(pdev, skb->data, bufsz,
+											  PCI_DMA_FROMDEVICE);
 
 		}
 		/* Refresh the desc even if buffer_addrs didn't change because
 		 * each write-back erases this info. */
 		if (adapter->rx_ps_hdr_size) {
-			rx_desc->read.pkt_addr =
-			     cpu_to_le64(buffer_info->page_dma);
+			rx_desc->read.pkt_addr = cpu_to_le64(buffer_info->page_dma);
 			rx_desc->read.hdr_addr = cpu_to_le64(buffer_info->dma);
 		} else {
-			rx_desc->read.pkt_addr =
-			     cpu_to_le64(buffer_info->dma);
+			rx_desc->read.pkt_addr = cpu_to_le64(buffer_info->dma);
 			rx_desc->read.hdr_addr = 0;
 		}
 
@@ -3698,9 +3698,8 @@ static int igb_mii_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 	case SIOCGMIIREG:
 		if (!capable(CAP_NET_ADMIN))
 			return -EPERM;
-		if (adapter->hw.phy.ops.read_phy_reg(&adapter->hw,
-						     data->reg_num
-						     & 0x1F, &data->val_out))
+		if (adapter->hw.phy.ops.read_phy_reg(&adapter->hw, data->reg_num & 0x1F,
+											 &data->val_out))
 			return -EIO;
 		break;
 	case SIOCSMIIREG:
@@ -3729,7 +3728,7 @@ static int igb_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
 }
 
 static void igb_vlan_rx_register(struct net_device *netdev,
-				 struct vlan_group *grp)
+								 struct vlan_group *grp)
 {
 	struct igb_adapter *adapter = netdev_priv(netdev);
 	struct e1000_hw *hw = &adapter->hw;
@@ -3839,8 +3838,9 @@ int igb_set_spd_dplx(struct igb_adapter *adapter, u16 spddplx)
 	mac->autoneg = 0;
 
 	/* Fiber NICs only allow 1000 gbps Full duplex */
-	if ((adapter->hw.phy.media_type == e1000_media_type_fiber) &&
-		spddplx != (SPEED_1000 + DUPLEX_FULL)) {
+	if ((adapter->hw.phy.media_type == e1000_media_type_fiber)
+		&& spddplx != (SPEED_1000 + DUPLEX_FULL))
+	{
 		dev_err(&adapter->pdev->dev,
 			"Unsupported Speed/Duplex configuration\n");
 		return -EINVAL;

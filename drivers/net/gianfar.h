@@ -306,19 +306,19 @@ extern const char gfar_driver_version[];
 
 
 /* TxBD status field bits */
-#define TXBD_READY		0x8000
-#define TXBD_PADCRC		0x4000
-#define TXBD_WRAP		0x2000
+#define TXBD_READY			0x8000
+#define TXBD_PADCRC			0x4000
+#define TXBD_WRAP			0x2000
 #define TXBD_INTERRUPT		0x1000
-#define TXBD_LAST		0x0800
-#define TXBD_CRC		0x0400
-#define TXBD_DEF		0x0200
+#define TXBD_LAST			0x0800
+#define TXBD_CRC			0x0400
+#define TXBD_DEF			0x0200
 #define TXBD_HUGEFRAME		0x0080
 #define TXBD_LATECOLLISION	0x0080
 #define TXBD_RETRYLIMIT		0x0040
 #define	TXBD_RETRYCOUNTMASK	0x003c
 #define TXBD_UNDERRUN		0x0002
-#define TXBD_TOE		0x0002
+#define TXBD_TOE			0x0002
 
 /* Tx FCB param bits */
 #define TXFCB_VLN		0x80
@@ -335,32 +335,32 @@ extern const char gfar_driver_version[];
 #define RXBD_EMPTY		0x8000
 #define RXBD_RO1		0x4000
 #define RXBD_WRAP		0x2000
-#define RXBD_INTERRUPT		0x1000
+#define RXBD_INTERRUPT	0x1000
 #define RXBD_LAST		0x0800
 #define RXBD_FIRST		0x0400
 #define RXBD_MISS		0x0100
-#define RXBD_BROADCAST		0x0080
-#define RXBD_MULTICAST		0x0040
+#define RXBD_BROADCAST	0x0080
+#define RXBD_MULTICAST	0x0040
 #define RXBD_LARGE		0x0020
-#define RXBD_NONOCTET		0x0010
+#define RXBD_NONOCTET	0x0010
 #define RXBD_SHORT		0x0008
 #define RXBD_CRCERR		0x0004
-#define RXBD_OVERRUN		0x0002
-#define RXBD_TRUNCATED		0x0001
+#define RXBD_OVERRUN	0x0002
+#define RXBD_TRUNCATED	0x0001
 #define RXBD_STATS		0x01ff
 #define RXBD_ERR		(RXBD_LARGE | RXBD_SHORT | RXBD_NONOCTET 	\
-				| RXBD_CRCERR | RXBD_OVERRUN			\
-				| RXBD_TRUNCATED)
+							| RXBD_CRCERR | RXBD_OVERRUN			\
+							| RXBD_TRUNCATED)
 
 /* Rx FCB status field bits */
-#define RXFCB_VLN		0x8000
-#define RXFCB_IP		0x4000
-#define RXFCB_IP6		0x2000
-#define RXFCB_TUP		0x1000
-#define RXFCB_CIP		0x0800
-#define RXFCB_CTU		0x0400
-#define RXFCB_EIP		0x0200
-#define RXFCB_ETU		0x0100
+#define RXFCB_VLN			0x8000
+#define RXFCB_IP			0x4000
+#define RXFCB_IP6			0x2000
+#define RXFCB_TUP			0x1000
+#define RXFCB_CIP			0x0800
+#define RXFCB_CTU			0x0400
+#define RXFCB_EIP			0x0200
+#define RXFCB_ETU			0x0100
 #define RXFCB_CSUM_MASK		0x0f00
 #define RXFCB_PERR_MASK		0x000c
 #define RXFCB_PERR_BADL3	0x0008
