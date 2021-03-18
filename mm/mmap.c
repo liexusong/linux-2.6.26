@@ -254,6 +254,7 @@ asmlinkage unsigned long sys_brk(unsigned long brk)
 #else
 	min_brk = mm->start_brk;
 #endif
+
 	if (brk < min_brk)
 		goto out;
 
@@ -264,8 +265,8 @@ asmlinkage unsigned long sys_brk(unsigned long brk)
 	 * not page aligned -Ram Gupta
 	 */
 	rlim = current->signal->rlim[RLIMIT_DATA].rlim_cur;
-	if (rlim < RLIM_INFINITY && (brk - mm->start_brk) +
-			(mm->end_data - mm->start_data) > rlim)
+	if (rlim < RLIM_INFINITY
+		&& (brk - mm->start_brk) + (mm->end_data - mm->start_data) > rlim)
 		goto out;
 
 	newbrk = PAGE_ALIGN(brk);
@@ -285,8 +286,9 @@ asmlinkage unsigned long sys_brk(unsigned long brk)
 		goto out;
 
 	/* Ok, looks good - let it rip. */
-	if (do_brk(oldbrk, newbrk-oldbrk) != oldbrk)
+	if (do_brk(oldbrk, newbrk - oldbrk) != oldbrk)
 		goto out;
+
 set_brk:
 	mm->brk = brk;
 out:
@@ -2014,10 +2016,12 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 	 */
 	if (mm->def_flags & VM_LOCKED) {
 		unsigned long locked, lock_limit;
+
 		locked = len >> PAGE_SHIFT;
 		locked += mm->locked_vm;
 		lock_limit = current->signal->rlim[RLIMIT_MEMLOCK].rlim_cur;
 		lock_limit >>= PAGE_SHIFT;
+
 		if (locked > lock_limit && !capable(CAP_IPC_LOCK))
 			return -EAGAIN;
 	}
@@ -2050,8 +2054,7 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 		return -ENOMEM;
 
 	/* Can we just expand an old private anonymous mapping? */
-	if (vma_merge(mm, prev, addr, addr + len, flags,
-					NULL, NULL, pgoff, NULL))
+	if (vma_merge(mm, prev, addr, addr+len, flags, NULL, NULL, pgoff, NULL))
 		goto out;
 
 	/*
@@ -2069,13 +2072,16 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
 	vma->vm_pgoff = pgoff;
 	vma->vm_flags = flags;
 	vma->vm_page_prot = vm_get_page_prot(flags);
+
 	vma_link(mm, vma, prev, rb_link, rb_parent);
+
 out:
 	mm->total_vm += len >> PAGE_SHIFT;
 	if (flags & VM_LOCKED) {
 		mm->locked_vm += len >> PAGE_SHIFT;
 		make_pages_present(addr, addr + len);
 	}
+
 	return addr;
 }
 

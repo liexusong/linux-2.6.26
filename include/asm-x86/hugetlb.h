@@ -4,9 +4,11 @@
 #include <asm/page.h>
 
 
-static inline int is_hugepage_only_range(struct mm_struct *mm,
-					 unsigned long addr,
-					 unsigned long len) {
+static inline int
+is_hugepage_only_range(struct mm_struct *mm,
+					   unsigned long addr,
+					   unsigned long len)
+{
 	return 0;
 }
 
