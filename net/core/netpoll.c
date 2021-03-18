@@ -51,8 +51,8 @@ static void arp_reply(struct sk_buff *skb);
 
 static void queue_process(struct work_struct *work)
 {
-	struct netpoll_info *npinfo =
-		container_of(work, struct netpoll_info, tx_work.work);
+	struct netpoll_info *npinfo = container_of(work, struct netpoll_info,
+											   tx_work.work);
 	struct sk_buff *skb;
 	unsigned long flags;
 
