@@ -158,8 +158,8 @@ struct rt_bandwidth {
 	/* nests inside the rq lock: */
 	spinlock_t		rt_runtime_lock;
 	ktime_t			rt_period;
-	u64			rt_runtime;
-	struct hrtimer		rt_period_timer;
+	u64				rt_runtime;
+	struct hrtimer	rt_period_timer;
 };
 
 static struct rt_bandwidth def_rt_bandwidth;
@@ -168,8 +168,7 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun);
 
 static enum hrtimer_restart sched_rt_period_timer(struct hrtimer *timer)
 {
-	struct rt_bandwidth *rt_b =
-		container_of(timer, struct rt_bandwidth, rt_period_timer);
+	struct rt_bandwidth *rt_b = container_of(timer, struct rt_bandwidth, rt_period_timer);
 	ktime_t now;
 	int overrun;
 	int idle = 0;
@@ -510,9 +509,9 @@ struct rq {
 	 */
 	unsigned long nr_uninterruptible;
 
-	struct task_struct *curr, *idle;
+	struct task_struct *curr, *idle; // 当前正在运行的进程与idle进程
 	unsigned long next_balance;
-	struct mm_struct *prev_mm;
+	struct mm_struct *prev_mm;       // 上一个运行进程的内存空间对象
 
 	u64 clock;
 
@@ -538,7 +537,7 @@ struct rq {
 	struct hrtimer hrtick_timer;
 #endif
 
-#ifdef CONFIG_SCHEDSTATS
+#ifdef CONFIG_SCHEDSTATS     /* 调度统计信息 */
 	/* latency stats */
 	struct sched_info rq_sched_info;
 
@@ -682,8 +681,8 @@ sched_feat_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
 }
 
 static ssize_t
-sched_feat_write(struct file *filp, const char __user *ubuf,
-		size_t cnt, loff_t *ppos)
+sched_feat_write(struct file *filp, const char __user *ubuf, size_t cnt,
+				 loff_t *ppos)
 {
 	char buf[64];
 	char *cmp = buf;
@@ -789,7 +788,8 @@ static DEFINE_PER_CPU(unsigned long long, prev_cpu_time);
 static DEFINE_SPINLOCK(time_sync_lock);
 static unsigned long long prev_global_time;
 
-static unsigned long long __sync_cpu_clock(unsigned long long time, int cpu)
+static unsigned long long
+__sync_cpu_clock(unsigned long long time, int cpu)
 {
 	/*
 	 * We want this inlined, to not get tracer function calls
@@ -890,7 +890,8 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
 }
 
 #else /* __ARCH_WANT_UNLOCKED_CTXSW */
-static inline int task_running(struct rq *rq, struct task_struct *p)
+static inline int
+task_running(struct rq *rq, struct task_struct *p)
 {
 #ifdef CONFIG_SMP
 	return p->oncpu;
@@ -899,7 +900,8 @@ static inline int task_running(struct rq *rq, struct task_struct *p)
 #endif
 }
 
-static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
+static inline void
+prepare_lock_switch(struct rq *rq, struct task_struct *next)
 {
 #ifdef CONFIG_SMP
 	/*
@@ -916,7 +918,8 @@ static inline void prepare_lock_switch(struct rq *rq, struct task_struct *next)
 #endif
 }
 
-static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+static inline void
+finish_lock_switch(struct rq *rq, struct task_struct *prev)
 {
 #ifdef CONFIG_SMP
 	/*
@@ -937,8 +940,8 @@ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
  * __task_rq_lock - lock the runqueue a given task resides on.
  * Must be called interrupts disabled.
  */
-static inline struct rq *__task_rq_lock(struct task_struct *p)
-	__acquires(rq->lock)
+static inline struct rq *
+__task_rq_lock(struct task_struct *p) __acquires(rq->lock)
 {
 	for (;;) {
 		struct rq *rq = task_rq(p);
@@ -954,8 +957,8 @@ static inline struct rq *__task_rq_lock(struct task_struct *p)
  * interrupts. Note the ordering: we can safely lookup the task_rq without
  * explicitly disabling preemption.
  */
-static struct rq *task_rq_lock(struct task_struct *p, unsigned long *flags)
-	__acquires(rq->lock)
+static struct rq *
+task_rq_lock(struct task_struct *p, unsigned long *flags) __acquires(rq->lock)
 {
 	struct rq *rq;
 
@@ -975,8 +978,8 @@ static void __task_rq_unlock(struct rq *rq)
 	spin_unlock(&rq->lock);
 }
 
-static inline void task_rq_unlock(struct rq *rq, unsigned long *flags)
-	__releases(rq->lock)
+static inline void
+task_rq_unlock(struct rq *rq, unsigned long *flags) __releases(rq->lock)
 {
 	spin_unlock_irqrestore(&rq->lock, *flags);
 }
@@ -984,8 +987,8 @@ static inline void task_rq_unlock(struct rq *rq, unsigned long *flags)
 /*
  * this_rq_lock - lock this runqueue and disable interrupts.
  */
-static struct rq *this_rq_lock(void)
-	__acquires(rq->lock)
+static struct rq *
+this_rq_lock(void) __acquires(rq->lock)
 {
 	struct rq *rq;
 
@@ -2183,14 +2186,14 @@ int wake_up_state(struct task_struct *p, unsigned int state)
 static void __sched_fork(struct task_struct *p)
 {
 	p->se.exec_start		= 0;
-	p->se.sum_exec_runtime		= 0;
+	p->se.sum_exec_runtime	= 0;
 	p->se.prev_sum_exec_runtime	= 0;
 	p->se.last_wakeup		= 0;
 	p->se.avg_overlap		= 0;
 
 #ifdef CONFIG_SCHEDSTATS
 	p->se.wait_start		= 0;
-	p->se.sum_sleep_runtime		= 0;
+	p->se.sum_sleep_runtime	= 0;
 	p->se.sleep_start		= 0;
 	p->se.block_start		= 0;
 	p->se.sleep_max			= 0;
@@ -2323,7 +2326,7 @@ static void fire_sched_in_preempt_notifiers(struct task_struct *curr)
 
 static void
 fire_sched_out_preempt_notifiers(struct task_struct *curr,
-				 struct task_struct *next)
+								 struct task_struct *next)
 {
 	struct preempt_notifier *notifier;
 	struct hlist_node *node;
@@ -2340,7 +2343,7 @@ static void fire_sched_in_preempt_notifiers(struct task_struct *curr)
 
 static void
 fire_sched_out_preempt_notifiers(struct task_struct *curr,
-				 struct task_struct *next)
+								 struct task_struct *next)
 {
 }
 
@@ -2361,7 +2364,7 @@ fire_sched_out_preempt_notifiers(struct task_struct *curr,
  */
 static inline void
 prepare_task_switch(struct rq *rq, struct task_struct *prev,
-		    struct task_struct *next)
+					struct task_struct *next)
 {
 	fire_sched_out_preempt_notifiers(prev, next);
 	prepare_lock_switch(rq, next);
@@ -2427,8 +2430,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
  * schedule_tail - first thing a freshly forked thread must call.
  * @prev: the thread we just switched away from.
  */
-asmlinkage void schedule_tail(struct task_struct *prev)
-	__releases(rq->lock)
+asmlinkage void schedule_tail(struct task_struct *prev) __releases(rq->lock)
 {
 	struct rq *rq = this_rq();
 
@@ -2447,7 +2449,7 @@ asmlinkage void schedule_tail(struct task_struct *prev)
  */
 static inline void
 context_switch(struct rq *rq, struct task_struct *prev,
-	       struct task_struct *next)
+			   struct task_struct *next)
 {
 	struct mm_struct *mm, *oldmm;
 
@@ -2461,17 +2463,18 @@ context_switch(struct rq *rq, struct task_struct *prev,
 	 */
 	arch_enter_lazy_cpu_mode();
 
-	if (unlikely(!mm)) {
-		next->active_mm = oldmm;
+	if (unlikely(!mm)) {         // 如果即将运行的进程是一个内核进程
+		next->active_mm = oldmm; // 那么就接用上一个进程的内存空间
 		atomic_inc(&oldmm->mm_count);
 		enter_lazy_tlb(oldmm, next);
 	} else
-		switch_mm(oldmm, mm, next);
+		switch_mm(oldmm, mm, next); // 否则就切换到即将运行进程的内存空间
 
 	if (unlikely(!prev->mm)) {
 		prev->active_mm = NULL;
 		rq->prev_mm = oldmm;
 	}
+
 	/*
 	 * Since the runqueue lock will be released by the next
 	 * task (which is an invalid locking op but in the case
@@ -4168,7 +4171,7 @@ need_resched_nonpreemptible:
 	 */
 	local_irq_disable();  // 关闭本地CPU中断
 	update_rq_clock(rq);
-	spin_lock(&rq->lock);
+	spin_lock(&rq->lock); // 对运行队列进行上锁
 	clear_tsk_need_resched(prev);
 
 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
@@ -4194,8 +4197,8 @@ need_resched_nonpreemptible:
 		sched_info_switch(prev, next);
 
 		rq->nr_switches++;
-		rq->curr = next;
-		++*switch_count;
+		rq->curr = next;  // 设置当前运行进程
+		++*switch_count;  // 增加进程切换统计
 
 		// 将旧进程切换到新进程
 		context_switch(rq, prev, next); /* unlocks the rq */
@@ -6826,10 +6829,10 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
 #define	SD_INIT(sd, type)	sd_init_##type(sd)
 #define SD_INIT_FUNC(type)	\
 static noinline void sd_init_##type(struct sched_domain *sd)	\
-{								\
-	memset(sd, 0, sizeof(*sd));				\
-	*sd = SD_##type##_INIT;					\
-	sd->level = SD_LV_##type;				\
+{																\
+	memset(sd, 0, sizeof(*sd));									\
+	*sd = SD_##type##_INIT;										\
+	sd->level = SD_LV_##type;									\
 }
 
 SD_INIT_FUNC(CPU)
@@ -6866,17 +6869,17 @@ struct allmasks {
 };
 
 #if	NR_CPUS > 128
-#define	SCHED_CPUMASK_ALLOC		1
+#define	SCHED_CPUMASK_ALLOC			1
 #define	SCHED_CPUMASK_FREE(v)		kfree(v)
 #define	SCHED_CPUMASK_DECLARE(v)	struct allmasks *v
 #else
-#define	SCHED_CPUMASK_ALLOC		0
+#define	SCHED_CPUMASK_ALLOC			0
 #define	SCHED_CPUMASK_FREE(v)
 #define	SCHED_CPUMASK_DECLARE(v)	struct allmasks _v, *v = &_v
 #endif
 
-#define	SCHED_CPUMASK_VAR(v, a) 	cpumask_t *v = (cpumask_t *) \
-			((unsigned long)(a) + offsetof(struct allmasks, v))
+#define	SCHED_CPUMASK_VAR(v, a)		cpumask_t *v = (cpumask_t *) \
+	((unsigned long)(a) + offsetof(struct allmasks, v))
 
 static int default_relax_domain_level = -1;
 
@@ -6893,7 +6896,7 @@ static int __init setup_relax_domain_level(char *str)
 __setup("relax_domain_level=", setup_relax_domain_level);
 
 static void set_domain_attribute(struct sched_domain *sd,
-				 struct sched_domain_attr *attr)
+								 struct sched_domain_attr *attr)
 {
 	int request;
 
@@ -6918,7 +6921,7 @@ static void set_domain_attribute(struct sched_domain *sd,
  * to the individual cpus
  */
 static int __build_sched_domains(const cpumask_t *cpu_map,
-				 struct sched_domain_attr *attr)
+								 struct sched_domain_attr *attr)
 {
 	int i;
 	struct root_domain *rd;
@@ -7727,6 +7730,7 @@ void __init sched_init(void)
 #ifdef CONFIG_RT_GROUP_SCHED
 	init_rt_bandwidth(&init_task_group.rt_bandwidth,
 					  global_rt_period(), global_rt_runtime());
+
 #ifdef CONFIG_USER_SCHED
 	init_rt_bandwidth(&root_task_group.rt_bandwidth,
 					  global_rt_period(), RUNTIME_INF);
@@ -7749,11 +7753,12 @@ void __init sched_init(void)
 		struct rq *rq;
 
 		rq = cpu_rq(i);
-		spin_lock_init(&rq->lock);
+
+		spin_lock_init(&rq->lock);  // 初始化运行队列的自旋锁
 		lockdep_set_class(&rq->lock, &rq->rq_lock_key);
 		rq->nr_running = 0;
-		init_cfs_rq(&rq->cfs, rq);
-		init_rt_rq(&rq->rt, rq);
+		init_cfs_rq(&rq->cfs, rq); // 初始化完全公平调度运行队列
+		init_rt_rq(&rq->rt, rq);   // 初始化实时调度运行队列
 #ifdef CONFIG_FAIR_GROUP_SCHED
 		init_task_group.shares = init_task_group_load;
 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
@@ -7794,8 +7799,8 @@ void __init sched_init(void)
 		 */
 		init_tg_cfs_entry(&init_task_group,
 						  &per_cpu(init_cfs_rq, i),
-						  &per_cpu(init_sched_entity, i), i, 1,
-						  root_task_group.se[i]);
+						  &per_cpu(init_sched_entity, i),
+						  i, 1, root_task_group.se[i]);
 
 #endif
 #endif /* CONFIG_FAIR_GROUP_SCHED */
@@ -7809,13 +7814,14 @@ void __init sched_init(void)
 		init_tg_rt_entry(&root_task_group, &rq->rt, NULL, i, 0, NULL);
 		init_tg_rt_entry(&init_task_group,
 						 &per_cpu(init_rt_rq, i),
-						 &per_cpu(init_sched_rt_entity, i), i, 1,
-						 root_task_group.rt_se[i]);
+						 &per_cpu(init_sched_rt_entity, i),
+						 i, 1, root_task_group.rt_se[i]);
 #endif
 #endif
 
 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
 			rq->cpu_load[j] = 0;
+
 #ifdef CONFIG_SMP
 		rq->sd = NULL;
 		rq->rd = NULL;
@@ -7861,7 +7867,7 @@ void __init sched_init(void)
 	/*
 	 * During early bootup we pretend to be a normal task:
 	 */
-	current->sched_class = &fair_sched_class; // 设置调度类为完全公平调度
+	current->sched_class = &fair_sched_class; // 设置init进程的调度类为完全公平调度
 
 	scheduler_running = 1;
 }

@@ -1,3 +1,1 @@
-struct net_device;
-struct sk_buff;
-ip_rcv();
+sys_mmap();

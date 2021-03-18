@@ -17,11 +17,16 @@
 #include <asm/uaccess.h>
 #include <asm/ia32.h>
 
-asmlinkage long sys_mmap(unsigned long addr, unsigned long len, unsigned long prot, unsigned long flags,
-	unsigned long fd, unsigned long off)
+asmlinkage long
+sys_mmap(unsigned long addr,    // 映射的虚拟内存地址
+		 unsigned long len,     // 映射长度
+		 unsigned long prot,    // 权限
+		 unsigned long flags,   // 标志
+		 unsigned long fd,      // 映射的文件句柄
+		 unsigned long off)     // 映射的文件偏移量
 {
 	long error;
-	struct file * file;
+	struct file *file;
 
 	error = -EINVAL;
 	if (off & ~PAGE_MASK)
@@ -35,8 +40,9 @@ asmlinkage long sys_mmap(unsigned long addr, unsigned long len, unsigned long pr
 		if (!file)
 			goto out;
 	}
+
 	down_write(&current->mm->mmap_sem);
-	error = do_mmap_pgoff(file, addr, len, prot, flags, off >> PAGE_SHIFT);
+	error = do_mmap_pgoff(file, addr, len, prot, flags, off>>PAGE_SHIFT);
 	up_write(&current->mm->mmap_sem);
 
 	if (file)
@@ -45,8 +51,8 @@ out:
 	return error;
 }
 
-static void find_start_end(unsigned long flags, unsigned long *begin,
-			   unsigned long *end)
+static void
+find_start_end(unsigned long flags, unsigned long *begin, unsigned long *end)
 {
 	if (!test_thread_flag(TIF_IA32) && (flags & MAP_32BIT)) {
 		unsigned long new_begin;
@@ -56,9 +62,9 @@ static void find_start_end(unsigned long flags, unsigned long *begin,
 		   unmapped base down for this case. This can give
 		   conflicts with the heap, but we assume that glibc
 		   malloc knows how to fall back to mmap. Give it 1GB
-		   of playground for now. -AK */ 
-		*begin = 0x40000000; 
-		*end = 0x80000000;		
+		   of playground for now. -AK */
+		*begin = 0x40000000;
+		*end = 0x80000000;
 		if (current->flags & PF_RANDOMIZE) {
 			new_begin = randomize_range(*begin, *begin + 0x02000000, 0);
 			if (new_begin)
@@ -66,9 +72,9 @@ static void find_start_end(unsigned long flags, unsigned long *begin,
 		}
 	} else {
 		*begin = TASK_UNMAPPED_BASE;
-		*end = TASK_SIZE; 
+		*end = TASK_SIZE;
 	}
-} 
+}
 
 unsigned long
 arch_get_unmapped_area(struct file *filp, unsigned long addr,
@@ -78,11 +84,11 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
 	struct vm_area_struct *vma;
 	unsigned long start_addr;
 	unsigned long begin, end;
-	
+
 	if (flags & MAP_FIXED)
 		return addr;
 
-	find_start_end(flags, &begin, &end); 
+	find_start_end(flags, &begin, &end);
 
 	if (len > end)
 		return -ENOMEM;
@@ -100,8 +106,8 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
 		mm->free_area_cache = begin;
 	}
 	addr = mm->free_area_cache;
-	if (addr < begin) 
-		addr = begin; 
+	if (addr < begin)
+		addr = begin;
 	start_addr = addr;
 
 full_search:
@@ -230,7 +236,7 @@ asmlinkage long sys_uname(struct new_utsname __user * name)
 	down_read(&uts_sem);
 	err = copy_to_user(name, utsname(), sizeof (*name));
 	up_read(&uts_sem);
-	if (personality(current->personality) == PER_LINUX32) 
-		err |= copy_to_user(&name->machine, "i686", 5); 		
+	if (personality(current->personality) == PER_LINUX32)
+		err |= copy_to_user(&name->machine, "i686", 5);
 	return err ? -EFAULT : 0;
 }

@@ -27,44 +27,44 @@ struct task_struct *__switch_to(struct task_struct *prev,
  * Saving eflags is important. It switches not only IOPL between tasks,
  * it also protects other tasks from NT leaking through sysenter etc.
  */
-#define switch_to(prev, next, last)					\
-do {									\
-	/*								\
-	 * Context-switching clobbers all registers, so we clobber	\
-	 * them explicitly, via unused output variables.		\
-	 * (EAX and EBP is not listed because EBP is saved/restored	\
+#define switch_to(prev, next, last)									\
+do {																\
+	/*																\
+	 * Context-switching clobbers all registers, so we clobber		\
+	 * them explicitly, via unused output variables.				\
+	 * (EAX and EBP is not listed because EBP is saved/restored		\
 	 * explicitly for wchan access and EAX is the return value of	\
-	 * __switch_to())						\
-	 */								\
-	unsigned long ebx, ecx, edx, esi, edi;				\
-									\
-	asm volatile("pushfl\n\t"		/* save    flags */	\
-		     "pushl %%ebp\n\t"		/* save    EBP   */	\
-		     "movl %%esp,%[prev_sp]\n\t"	/* save    ESP   */ \
-		     "movl %[next_sp],%%esp\n\t"	/* restore ESP   */ \
-		     "movl $1f,%[prev_ip]\n\t"	/* save    EIP   */	\
-		     "pushl %[next_ip]\n\t"	/* restore EIP   */	\
-		     "jmp __switch_to\n"	/* regparm call  */	\
-		     "1:\t"						\
-		     "popl %%ebp\n\t"		/* restore EBP   */	\
-		     "popfl\n"			/* restore flags */	\
-									\
-		     /* output parameters */				\
-		     : [prev_sp] "=m" (prev->thread.sp),		\
-		       [prev_ip] "=m" (prev->thread.ip),		\
-		       "=a" (last),					\
-									\
-		       /* clobbered output registers: */		\
-		       "=b" (ebx), "=c" (ecx), "=d" (edx),		\
-		       "=S" (esi), "=D" (edi)				\
-		       							\
-		       /* input parameters: */				\
-		     : [next_sp]  "m" (next->thread.sp),		\
-		       [next_ip]  "m" (next->thread.ip),		\
-		       							\
-		       /* regparm parameters for __switch_to(): */	\
-		       [prev]     "a" (prev),				\
-		       [next]     "d" (next));				\
+	 * __switch_to())												\
+	 */																\
+	unsigned long ebx, ecx, edx, esi, edi;							\
+																	\
+	asm volatile("pushfl\n\t"		/* save    flags */				\
+		     "pushl %%ebp\n\t"		/* save    EBP   */				\
+		     "movl %%esp,%[prev_sp]\n\t"	/* save    ESP   */ 	\
+		     "movl %[next_sp],%%esp\n\t"	/* restore ESP   */ 	\
+		     "movl $1f,%[prev_ip]\n\t"	/* save    EIP   */			\
+		     "pushl %[next_ip]\n\t"	/* restore EIP   */				\
+		     "jmp __switch_to\n"	/* regparm call  */				\
+		     "1:\t"													\
+		     "popl %%ebp\n\t"		/* restore EBP   */				\
+		     "popfl\n"			/* restore flags */					\
+																	\
+		     /* output parameters */								\
+		     : [prev_sp] "=m" (prev->thread.sp),					\
+		       [prev_ip] "=m" (prev->thread.ip),					\
+		       "=a" (last),											\
+																	\
+		       /* clobbered output registers: */					\
+		       "=b" (ebx), "=c" (ecx), "=d" (edx),					\
+		       "=S" (esi), "=D" (edi)								\
+		       														\
+		       /* input parameters: */								\
+		     : [next_sp]  "m" (next->thread.sp),					\
+		       [next_ip]  "m" (next->thread.ip),					\
+		       														\
+		       /* regparm parameters for __switch_to(): */			\
+		       [prev]     "a" (prev),								\
+		       [next]     "d" (next));								\
 } while (0)
 
 /*
@@ -79,58 +79,58 @@ do {									\
 #define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
 #define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp ; popf\t"
 
-#define __EXTRA_CLOBBER  \
-	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11", \
+#define __EXTRA_CLOBBER									\
+	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11",	\
 	  "r12", "r13", "r14", "r15"
 
 /* Save restore flags to clear handle leaking NT */
-#define switch_to(prev, next, last) \
-	asm volatile(SAVE_CONTEXT						    \
-	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */	  \
-	     "movq %P[threadrsp](%[next]),%%rsp\n\t" /* restore RSP */	  \
-	     "call __switch_to\n\t"					  \
-	     ".globl thread_return\n"					  \
-	     "thread_return:\n\t"					  \
-	     "movq %%gs:%P[pda_pcurrent],%%rsi\n\t"			  \
-	     "movq %P[thread_info](%%rsi),%%r8\n\t"			  \
-	     LOCK_PREFIX "btr  %[tif_fork],%P[ti_flags](%%r8)\n\t"	  \
-	     "movq %%rax,%%rdi\n\t" 					  \
-	     "jc   ret_from_fork\n\t"					  \
-	     RESTORE_CONTEXT						  \
-	     : "=a" (last)					  	  \
-	     : [next] "S" (next), [prev] "D" (prev),			  \
-	       [threadrsp] "i" (offsetof(struct task_struct, thread.sp)), \
-	       [ti_flags] "i" (offsetof(struct thread_info, flags)),	  \
-	       [tif_fork] "i" (TIF_FORK),			  	  \
-	       [thread_info] "i" (offsetof(struct task_struct, stack)),   \
-	       [pda_pcurrent] "i" (offsetof(struct x8664_pda, pcurrent))  \
+#define switch_to(prev, next, last)										\
+	asm volatile(SAVE_CONTEXT											\
+	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */			\
+	     "movq %P[threadrsp](%[next]),%%rsp\n\t" /* restore RSP */		\
+	     "call __switch_to\n\t"											\
+	     ".globl thread_return\n"										\
+	     "thread_return:\n\t"											\
+	     "movq %%gs:%P[pda_pcurrent],%%rsi\n\t"							\
+	     "movq %P[thread_info](%%rsi),%%r8\n\t"							\
+	     LOCK_PREFIX "btr  %[tif_fork],%P[ti_flags](%%r8)\n\t"			\
+	     "movq %%rax,%%rdi\n\t" 										\
+	     "jc   ret_from_fork\n\t"										\
+	     RESTORE_CONTEXT												\
+	     : "=a" (last)													\
+	     : [next] "S" (next), [prev] "D" (prev),						\
+	       [threadrsp] "i" (offsetof(struct task_struct, thread.sp)),	\
+	       [ti_flags] "i" (offsetof(struct thread_info, flags)),		\
+	       [tif_fork] "i" (TIF_FORK),									\
+	       [thread_info] "i" (offsetof(struct task_struct, stack)),		\
+	       [pda_pcurrent] "i" (offsetof(struct x8664_pda, pcurrent))	\
 	     : "memory", "cc" __EXTRA_CLOBBER)
 #endif
 
 #ifdef __KERNEL__
-#define _set_base(addr, base) do { unsigned long __pr; \
-__asm__ __volatile__ ("movw %%dx,%1\n\t" \
-	"rorl $16,%%edx\n\t" \
-	"movb %%dl,%2\n\t" \
-	"movb %%dh,%3" \
-	:"=&d" (__pr) \
-	:"m" (*((addr)+2)), \
-	 "m" (*((addr)+4)), \
-	 "m" (*((addr)+7)), \
-	 "0" (base) \
+#define _set_base(addr, base) do { unsigned long __pr;	\
+__asm__ __volatile__ ("movw %%dx,%1\n\t"				\
+	"rorl $16,%%edx\n\t"								\
+	"movb %%dl,%2\n\t"									\
+	"movb %%dh,%3"										\
+	:"=&d" (__pr)										\
+	:"m" (*((addr)+2)),									\
+	 "m" (*((addr)+4)),									\
+	 "m" (*((addr)+7)),									\
+	 "0" (base)											\
 	); } while (0)
 
-#define _set_limit(addr, limit) do { unsigned long __lr; \
-__asm__ __volatile__ ("movw %%dx,%1\n\t" \
-	"rorl $16,%%edx\n\t" \
-	"movb %2,%%dh\n\t" \
-	"andb $0xf0,%%dh\n\t" \
-	"orb %%dh,%%dl\n\t" \
-	"movb %%dl,%2" \
-	:"=&d" (__lr) \
-	:"m" (*(addr)), \
-	 "m" (*((addr)+6)), \
-	 "0" (limit) \
+#define _set_limit(addr, limit) do { unsigned long __lr;\
+__asm__ __volatile__ ("movw %%dx,%1\n\t"				\
+	"rorl $16,%%edx\n\t"								\
+	"movb %2,%%dh\n\t"									\
+	"andb $0xf0,%%dh\n\t"								\
+	"orb %%dh,%%dl\n\t"									\
+	"movb %%dl,%2"										\
+	:"=&d" (__lr)										\
+	:"m" (*(addr)),										\
+	 "m" (*((addr)+6)),									\
+	 "0" (limit)										\
 	); } while (0)
 
 #define set_base(ldt, base) _set_base(((char *)&(ldt)) , (base))
@@ -143,16 +143,16 @@ extern void load_gs_index(unsigned);
  * segment if something goes wrong..
  */
 #define loadsegment(seg, value)			\
-	asm volatile("\n"			\
-		     "1:\t"			\
+	asm volatile("\n"					\
+		     "1:\t"						\
 		     "movl %k0,%%" #seg "\n"	\
-		     "2:\n"			\
+		     "2:\n"						\
 		     ".section .fixup,\"ax\"\n"	\
-		     "3:\t"			\
+		     "3:\t"						\
 		     "movl %k1, %%" #seg "\n\t"	\
-		     "jmp 2b\n"			\
-		     ".previous\n"		\
-		     _ASM_EXTABLE(1b,3b)	\
+		     "jmp 2b\n"					\
+		     ".previous\n"				\
+		     _ASM_EXTABLE(1b,3b)		\
 		     : :"r" (value), "r" (0))
 
 
@@ -269,18 +269,18 @@ static inline void native_wbinvd(void)
 #ifdef CONFIG_PARAVIRT
 #include <asm/paravirt.h>
 #else
-#define read_cr0()	(native_read_cr0())
+#define read_cr0()		(native_read_cr0())
 #define write_cr0(x)	(native_write_cr0(x))
-#define read_cr2()	(native_read_cr2())
+#define read_cr2()		(native_read_cr2())
 #define write_cr2(x)	(native_write_cr2(x))
-#define read_cr3()	(native_read_cr3())
+#define read_cr3()		(native_read_cr3())
 #define write_cr3(x)	(native_write_cr3(x))
-#define read_cr4()	(native_read_cr4())
+#define read_cr4()		(native_read_cr4())
 #define read_cr4_safe()	(native_read_cr4_safe())
 #define write_cr4(x)	(native_write_cr4(x))
-#define wbinvd()	(native_wbinvd())
+#define wbinvd()		(native_wbinvd())
 #ifdef CONFIG_X86_64
-#define read_cr8()	(native_read_cr8())
+#define read_cr8()		(native_read_cr8())
 #define write_cr8(x)	(native_write_cr8(x))
 #endif
 
@@ -321,7 +321,7 @@ void default_idle(void);
  * Some non-Intel clones support out of order store. wmb() ceases to be a
  * nop for these.
  */
-#define mb() alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
+#define mb()  alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
 #define rmb() alternative("lock; addl $0,0(%%esp)", "lfence", X86_FEATURE_XMM2)
 #define wmb() alternative("lock; addl $0,0(%%esp)", "sfence", X86_FEATURE_XMM)
 #else

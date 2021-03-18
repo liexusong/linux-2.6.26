@@ -22,15 +22,17 @@
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 
-asmlinkage long sys_mmap2(unsigned long addr, unsigned long len,
-			  unsigned long prot, unsigned long flags,
-			  unsigned long fd, unsigned long pgoff)
+asmlinkage long
+sys_mmap2(unsigned long addr, unsigned long len,
+		  unsigned long prot, unsigned long flags,
+		  unsigned long fd, unsigned long pgoff)
 {
 	int error = -EBADF;
 	struct file *file = NULL;
 	struct mm_struct *mm = current->mm;
 
-	flags &= ~(MAP_EXECUTABLE | MAP_DENYWRITE);
+	flags &= ~(MAP_EXECUTABLE|MAP_DENYWRITE);
+
 	if (!(flags & MAP_ANONYMOUS)) {
 		file = fget(fd);
 		if (!file)
@@ -130,7 +132,7 @@ asmlinkage int sys_ipc (uint call, int first, int second,
 	}
 
 	case MSGSND:
-		return sys_msgsnd (first, (struct msgbuf __user *) ptr, 
+		return sys_msgsnd (first, (struct msgbuf __user *) ptr,
 				   second, third);
 	case MSGRCV:
 		switch (version) {
@@ -138,9 +140,9 @@ asmlinkage int sys_ipc (uint call, int first, int second,
 			struct ipc_kludge tmp;
 			if (!ptr)
 				return -EINVAL;
-			
+
 			if (copy_from_user(&tmp,
-					   (struct ipc_kludge __user *) ptr, 
+					   (struct ipc_kludge __user *) ptr,
 					   sizeof (tmp)))
 				return -EFAULT;
 			return sys_msgrcv (first, tmp.msgp, second,
@@ -171,7 +173,7 @@ asmlinkage int sys_ipc (uint call, int first, int second,
 			/* The "(ulong *) third" is valid _only_ because of the kernel segment thing */
 			return do_shmat (first, (char __user *) ptr, second, (ulong *) third);
 		}
-	case SHMDT: 
+	case SHMDT:
 		return sys_shmdt ((char __user *)ptr);
 	case SHMGET:
 		return sys_shmget (first, second, third);
@@ -205,9 +207,9 @@ asmlinkage int sys_olduname(struct oldold_utsname __user * name)
 		return -EFAULT;
 	if (!access_ok(VERIFY_WRITE,name,sizeof(struct oldold_utsname)))
 		return -EFAULT;
-  
+
   	down_read(&uts_sem);
-	
+
 	error = __copy_to_user(&name->sysname, &utsname()->sysname,
 			       __OLD_UTS_LEN);
 	error |= __put_user(0, name->sysname + __OLD_UTS_LEN);
@@ -223,9 +225,9 @@ asmlinkage int sys_olduname(struct oldold_utsname __user * name)
 	error |= __copy_to_user(&name->machine, &utsname()->machine,
 				__OLD_UTS_LEN);
 	error |= __put_user(0, name->machine + __OLD_UTS_LEN);
-	
+
 	up_read(&uts_sem);
-	
+
 	error = error ? -EFAULT : 0;
 
 	return error;

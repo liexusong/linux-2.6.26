@@ -59,7 +59,7 @@ static void unmap_region(struct mm_struct *mm,
  * MAP_SHARED	r: (no) no	r: (yes) yes	r: (no) yes	r: (no) yes
  *		w: (no) no	w: (no) no	w: (yes) yes	w: (no) no
  *		x: (no) no	x: (no) yes	x: (no) yes	x: (yes) yes
- *		
+ *
  * MAP_PRIVATE	r: (no) no	r: (yes) yes	r: (no) yes	r: (no) yes
  *		w: (no) no	w: (no) no	w: (copy) copy	w: (no) no
  *		x: (no) no	x: (no) yes	x: (no) yes	x: (yes) yes
@@ -905,9 +905,13 @@ void vm_stat_account(struct mm_struct *mm, unsigned long flags,
  * The caller must hold down_write(current->mm->mmap_sem).
  */
 
-unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
-			unsigned long len, unsigned long prot,
-			unsigned long flags, unsigned long pgoff)
+unsigned long
+do_mmap_pgoff(struct file *file,   // 映射的文件
+			  unsigned long addr,  // 映射的虚拟内存地址
+			  unsigned long len,   // 映射的长度
+			  unsigned long prot,  // 操作权限
+			  unsigned long flags, // 标志
+			  unsigned long pgoff) // 映射的内存页数
 {
 	struct mm_struct * mm = current->mm;
 	struct inode *inode;
@@ -952,6 +956,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 	/* Obtain the address to map to. we verify (or select) it and ensure
 	 * that it represents a valid section of the address space.
 	 */
+	// 获取一个没有被映射的虚拟内存地址
 	addr = get_unmapped_area(file, addr, len, pgoff, flags);
 	if (addr & ~PAGE_MASK)
 		return addr;
@@ -960,17 +965,23 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 	 * to. we assume access permissions have been handled by the open
 	 * of the memory object, so we don't do any here.
 	 */
-	vm_flags = calc_vm_prot_bits(prot) | calc_vm_flag_bits(flags) |
-			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
+	vm_flags = calc_vm_prot_bits(prot)
+					| calc_vm_flag_bits(flags)
+					| mm->def_flags
+					| VM_MAYREAD
+					| VM_MAYWRITE
+					| VM_MAYEXEC;
 
 	if (flags & MAP_LOCKED) {
 		if (!can_do_mlock())
 			return -EPERM;
 		vm_flags |= VM_LOCKED;
 	}
+
 	/* mlock MCL_FUTURE? */
 	if (vm_flags & VM_LOCKED) {
 		unsigned long locked, lock_limit;
+
 		locked = len >> PAGE_SHIFT;
 		locked += mm->locked_vm;
 		lock_limit = current->signal->rlim[RLIMIT_MEMLOCK].rlim_cur;
@@ -984,7 +995,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 	if (file) {
 		switch (flags & MAP_TYPE) {
 		case MAP_SHARED:
-			if ((prot&PROT_WRITE) && !(file->f_mode&FMODE_WRITE))
+			if ((prot & PROT_WRITE) && !(file->f_mode & FMODE_WRITE))
 				return -EACCES;
 
 			/*
@@ -1008,16 +1019,19 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 		case MAP_PRIVATE:
 			if (!(file->f_mode & FMODE_READ))
 				return -EACCES;
+
 			if (file->f_path.mnt->mnt_flags & MNT_NOEXEC) {
 				if (vm_flags & VM_EXEC)
 					return -EPERM;
 				vm_flags &= ~VM_MAYEXEC;
 			}
+
 			if (is_file_hugepages(file))
 				accountable = 0;
 
 			if (!file->f_op || !file->f_op->mmap)
 				return -ENODEV;
+
 			break;
 
 		default:
@@ -1043,8 +1057,7 @@ unsigned long do_mmap_pgoff(struct file * file, unsigned long addr,
 	if (error)
 		return error;
 
-	return mmap_region(file, addr, len, flags, vm_flags, pgoff,
-			   accountable);
+	return mmap_region(file, addr, len, flags, vm_flags, pgoff, accountable);
 }
 EXPORT_SYMBOL(do_mmap_pgoff);
 
@@ -1080,10 +1093,11 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
 		mapping_cap_account_dirty(vma->vm_file->f_mapping);
 }
 
-unsigned long mmap_region(struct file *file, unsigned long addr,
-			  unsigned long len, unsigned long flags,
-			  unsigned int vm_flags, unsigned long pgoff,
-			  int accountable)
+unsigned long
+mmap_region(struct file *file, unsigned long addr,
+			unsigned long len, unsigned long flags,
+			unsigned int vm_flags, unsigned long pgoff,
+			int accountable)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma, *prev;
@@ -1091,10 +1105,11 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
 	int error;
 	struct rb_node **rb_link, *rb_parent;
 	unsigned long charged = 0;
-	struct inode *inode =  file ? file->f_path.dentry->d_inode : NULL;
+	struct inode *inode = file ? file->f_path.dentry->d_inode : NULL;
 
 	/* Clear old maps */
 	error = -ENOMEM;
+
 munmap_back:
 	vma = find_vma_prepare(mm, addr, &prev, &rb_link, &rb_parent);
 	if (vma && vma->vm_start < addr + len) {
@@ -1107,8 +1122,10 @@ munmap_back:
 	if (!may_expand_vm(mm, len >> PAGE_SHIFT))
 		return -ENOMEM;
 
-	if (accountable && (!(flags & MAP_NORESERVE) ||
-			    sysctl_overcommit_memory == OVERCOMMIT_NEVER)) {
+	if (accountable
+		&& (!(flags & MAP_NORESERVE)
+			 || sysctl_overcommit_memory == OVERCOMMIT_NEVER))
+	{
 		if (vm_flags & VM_SHARED) {
 			/* Check memory availability in shmem_file_setup? */
 			vm_flags |= VM_ACCOUNT;
@@ -1128,9 +1145,9 @@ munmap_back:
 	 * The VM_SHARED test is necessary because shmem_zero_setup
 	 * will create the file object for a shared anonymous map below.
 	 */
-	if (!file && !(vm_flags & VM_SHARED) &&
-	    vma_merge(mm, prev, addr, addr + len, vm_flags,
-					NULL, NULL, pgoff, NULL))
+	if (!file &&
+		!(vm_flags & VM_SHARED) &&
+	    vma_merge(mm, prev, addr, addr+len, vm_flags, NULL, NULL, pgoff, NULL))
 		goto out;
 
 	/*
@@ -1153,21 +1170,27 @@ munmap_back:
 
 	if (file) {
 		error = -EINVAL;
+
 		if (vm_flags & (VM_GROWSDOWN|VM_GROWSUP))
 			goto free_vma;
+
 		if (vm_flags & VM_DENYWRITE) {
 			error = deny_write_access(file);
 			if (error)
 				goto free_vma;
 			correct_wcount = 1;
 		}
+
 		vma->vm_file = file;
 		get_file(file);
+
 		error = file->f_op->mmap(file, vma);
 		if (error)
 			goto unmap_and_free_vma;
+
 		if (vm_flags & VM_EXECUTABLE)
 			added_exe_file_vma(mm);
+
 	} else if (vm_flags & VM_SHARED) {
 		error = shmem_zero_setup(vma);
 		if (error)
@@ -1194,8 +1217,10 @@ munmap_back:
 	if (vma_wants_writenotify(vma))
 		vma->vm_page_prot = vm_get_page_prot(vm_flags & ~VM_SHARED);
 
-	if (file && vma_merge(mm, prev, addr, vma->vm_end,
-			vma->vm_flags, NULL, file, pgoff, vma_policy(vma))) {
+	if (file
+		&& vma_merge(mm, prev, addr, vma->vm_end, vma->vm_flags, NULL, file,
+					 pgoff, vma_policy(vma)))
+	{
 		mpol_put(vma_policy(vma));
 		kmem_cache_free(vm_area_cachep, vma);
 		fput(file);
@@ -1212,12 +1237,15 @@ munmap_back:
 out:
 	mm->total_vm += len >> PAGE_SHIFT;
 	vm_stat_account(mm, vm_flags, file, len >> PAGE_SHIFT);
+
 	if (vm_flags & VM_LOCKED) {
 		mm->locked_vm += len >> PAGE_SHIFT;
 		make_pages_present(addr, addr + len);
 	}
+
 	if ((flags & MAP_POPULATE) && !(flags & MAP_NONBLOCK))
 		make_pages_present(addr, addr + len);
+
 	return addr;
 
 unmap_and_free_vma:
@@ -1305,7 +1333,7 @@ full_search:
 		addr = vma->vm_end;
 	}
 }
-#endif	
+#endif
 
 void arch_unmap_area(struct mm_struct *mm, unsigned long addr)
 {
