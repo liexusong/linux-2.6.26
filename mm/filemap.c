@@ -565,7 +565,7 @@ void unlock_page(struct page *page)
 	smp_mb__before_clear_bit();
 	if (!TestClearPageLocked(page))
 		BUG();
-	smp_mb__after_clear_bit(); 
+	smp_mb__after_clear_bit();
 	wake_up_page(page, PG_locked);
 }
 EXPORT_SYMBOL(unlock_page);
@@ -1285,7 +1285,7 @@ asmlinkage ssize_t sys_readahead(int fd, loff_t offset, size_t count)
 static int page_cache_read(struct file *file, pgoff_t offset)
 {
 	struct address_space *mapping = file->f_mapping;
-	struct page *page; 
+	struct page *page;
 	int ret;
 
 	do {
@@ -1302,7 +1302,7 @@ static int page_cache_read(struct file *file, pgoff_t offset)
 		page_cache_release(page);
 
 	} while (ret == AOP_TRUNCATED_PAGE);
-		
+
 	return ret;
 }
 
@@ -1382,6 +1382,7 @@ retry_find:
 			ret = VM_FAULT_MAJOR;
 			count_vm_event(PGMAJFAULT);
 		}
+
 		did_readaround = 1;
 		ra_pages = max_sane_readahead(file->f_ra.ra_pages);
 		if (ra_pages) {
@@ -1478,7 +1479,7 @@ page_not_uptodate:
 EXPORT_SYMBOL(filemap_fault);
 
 struct vm_operations_struct generic_file_vm_ops = {
-	.fault		= filemap_fault,
+	.fault = filemap_fault,
 };
 
 /* This is used for a general mmap of a disk file */
@@ -1489,9 +1490,11 @@ int generic_file_mmap(struct file * file, struct vm_area_struct * vma)
 
 	if (!mapping->a_ops->readpage)
 		return -ENOEXEC;
+
 	file_accessed(file);
 	vma->vm_ops = &generic_file_vm_ops;
 	vma->vm_flags |= VM_CAN_NONLINEAR;
+
 	return 0;
 }
 
@@ -2347,7 +2350,7 @@ generic_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,
 						OSYNC_METADATA|OSYNC_DATA);
 		}
   	}
-	
+
 	/*
 	 * If we get here for O_DIRECT writes then we must have fallen through
 	 * to buffered writes (block instantiation inside i_size).  So we sync

@@ -1094,9 +1094,12 @@ int vma_wants_writenotify(struct vm_area_struct *vma)
 }
 
 unsigned long
-mmap_region(struct file *file, unsigned long addr,
-			unsigned long len, unsigned long flags,
-			unsigned int vm_flags, unsigned long pgoff,
+mmap_region(struct file *file,       // 映射的文件
+			unsigned long addr,      // 映射的虚拟内存地址
+			unsigned long len,       // 映射的长度
+			unsigned long flags,     // 标志
+			unsigned int vm_flags,   // 操作权限
+			unsigned long pgoff,     // 映射多少个内存页
 			int accountable)
 {
 	struct mm_struct *mm = current->mm;
@@ -1145,8 +1148,7 @@ munmap_back:
 	 * The VM_SHARED test is necessary because shmem_zero_setup
 	 * will create the file object for a shared anonymous map below.
 	 */
-	if (!file &&
-		!(vm_flags & VM_SHARED) &&
+	if (!file && !(vm_flags & VM_SHARED) &&
 	    vma_merge(mm, prev, addr, addr+len, vm_flags, NULL, NULL, pgoff, NULL))
 		goto out;
 
@@ -1184,6 +1186,7 @@ munmap_back:
 		vma->vm_file = file;
 		get_file(file);
 
+		// 通常会调用 generic_file_mmap() 函数
 		error = file->f_op->mmap(file, vma);
 		if (error)
 			goto unmap_and_free_vma;
@@ -1234,6 +1237,7 @@ munmap_back:
 	/* Once vma denies write, undo our temporary denial count */
 	if (correct_wcount)
 		atomic_inc(&inode->i_writecount);
+
 out:
 	mm->total_vm += len >> PAGE_SHIFT;
 	vm_stat_account(mm, vm_flags, file, len >> PAGE_SHIFT);
