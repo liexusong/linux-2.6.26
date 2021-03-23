@@ -117,7 +117,8 @@ static int aio_setup_ring(struct kioctx *ctx)
 	if (nr_pages < 0)
 		return -EINVAL;
 
-	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring)) / sizeof(struct io_event);
+	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring))
+										/ sizeof(struct io_event);
 
 	info->nr = 0;
 	info->ring_pages = info->internal_pages;
@@ -130,9 +131,13 @@ static int aio_setup_ring(struct kioctx *ctx)
 	info->mmap_size = nr_pages * PAGE_SIZE;
 	dprintk("attempting mmap of %lu bytes\n", info->mmap_size);
 	down_write(&ctx->mm->mmap_sem);
-	info->mmap_base = do_mmap(NULL, 0, info->mmap_size, 
-				  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE,
-				  0); // 获取虚拟内存地址
+
+	// 获取虚拟内存地址
+	info->mmap_base = do_mmap(NULL, 0, info->mmap_size,
+							  PROT_READ|PROT_WRITE,
+							  MAP_ANONYMOUS|MAP_PRIVATE,
+							  0);
+
 	if (IS_ERR((void *)info->mmap_base)) {
 		up_write(&ctx->mm->mmap_sem);
 		info->mmap_size = 0;
@@ -141,10 +146,12 @@ static int aio_setup_ring(struct kioctx *ctx)
 	}
 
 	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
+
 	// 映射物理内存地址
 	info->nr_pages = get_user_pages(current, ctx->mm,
-					info->mmap_base, nr_pages, 
-					1, 0, info->ring_pages, NULL);
+									info->mmap_base, nr_pages,
+									1, 0, info->ring_pages, NULL);
+
 	up_write(&ctx->mm->mmap_sem);
 
 	if (unlikely(info->nr_pages != nr_pages)) {
@@ -173,9 +180,10 @@ static int aio_setup_ring(struct kioctx *ctx)
 /* aio_ring_event: returns a pointer to the event at the given index from
  * kmap_atomic(, km).  Release the pointer with put_aio_ring_event();
  */
-#define AIO_EVENTS_PER_PAGE	(PAGE_SIZE / sizeof(struct io_event))
-#define AIO_EVENTS_FIRST_PAGE	((PAGE_SIZE - sizeof(struct aio_ring)) / sizeof(struct io_event))
-#define AIO_EVENTS_OFFSET	(AIO_EVENTS_PER_PAGE - AIO_EVENTS_FIRST_PAGE)
+#define AIO_EVENTS_PER_PAGE		(PAGE_SIZE / sizeof(struct io_event))
+#define AIO_EVENTS_FIRST_PAGE	((PAGE_SIZE - sizeof(struct aio_ring))	\
+										/ sizeof(struct io_event))
+#define AIO_EVENTS_OFFSET		(AIO_EVENTS_PER_PAGE - AIO_EVENTS_FIRST_PAGE)
 
 #define aio_ring_event(info, nr, km) ({							\
 	unsigned pos = (nr) + AIO_EVENTS_OFFSET;					\
@@ -238,8 +246,9 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
 	struct kioctx *ctx;
 
 	/* Prevent overflows */
-	if ((nr_events > (0x10000000U / sizeof(struct io_event))) ||
-	    (nr_events > (0x10000000U / sizeof(struct kiocb)))) {
+	if ((nr_events > (0x10000000U / sizeof(struct io_event)))
+	    || (nr_events > (0x10000000U / sizeof(struct kiocb))))
+	{
 		pr_debug("ENOMEM: nr_events too high\n");
 		return ERR_PTR(-EINVAL);
 	}
@@ -264,17 +273,19 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
 	INIT_LIST_HEAD(&ctx->run_list);
 	INIT_DELAYED_WORK(&ctx->wq, aio_kick_handler);
 
-	if (aio_setup_ring(ctx) < 0)
+	if (aio_setup_ring(ctx) < 0) // 初始化环形缓冲区
 		goto out_freectx;
 
 	/* limit the number of system wide aios */
 	spin_lock(&aio_nr_lock);
-	if (aio_nr + ctx->max_reqs > aio_max_nr ||
-	    aio_nr + ctx->max_reqs < aio_nr)
+
+	if (aio_nr + ctx->max_reqs > aio_max_nr || aio_nr + ctx->max_reqs < aio_nr)
 		ctx->max_reqs = 0;
 	else
 		aio_nr += ctx->max_reqs;
+
 	spin_unlock(&aio_nr_lock);
+
 	if (ctx->max_reqs == 0)
 		goto out_cleanup;
 
@@ -285,7 +296,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
 	write_unlock(&mm->ioctx_list_lock);
 
 	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
-		ctx, ctx->user_id, current->mm, ctx->ring_info.nr);
+			ctx, ctx->user_id, current->mm, ctx->ring_info.nr);
+
 	return ctx;
 
 out_cleanup:
@@ -302,8 +314,8 @@ out_freectx:
 }
 
 /* aio_cancel_all
- *	Cancels all outstanding aio requests on an aio context.  Used 
- *	when the processes owning a context have all exited to encourage 
+ *	Cancels all outstanding aio requests on an aio context.  Used
+ *	when the processes owning a context have all exited to encourage
  *	the rapid destruction of the kioctx.
  */
 static void aio_cancel_all(struct kioctx *ctx)
@@ -367,10 +379,10 @@ ssize_t wait_on_sync_kiocb(struct kiocb *iocb)
 	return iocb->ki_user_data;
 }
 
-/* exit_aio: called when the last user of mm goes away.  At this point, 
- * there is no way for any new requests to be submited or any of the 
- * io_* syscalls to be called on the context.  However, there may be 
- * outstanding requests which hold references to the context; as they 
+/* exit_aio: called when the last user of mm goes away.  At this point,
+ * there is no way for any new requests to be submited or any of the
+ * io_* syscalls to be called on the context.  However, there may be
+ * outstanding requests which hold references to the context; as they
  * go away, they will call put_ioctx and release any pinned memory
  * associated with the request (held via struct page * references).
  */
@@ -455,8 +467,8 @@ static struct kiocb *__aio_get_req(struct kioctx *ctx)
 static inline struct kiocb *aio_get_req(struct kioctx *ctx)
 {
 	struct kiocb *req;
-	/* Handle a potential starvation case -- should be exceedingly rare as 
-	 * requests will be stuck on fput_head only if the aio_fput_routine is 
+	/* Handle a potential starvation case -- should be exceedingly rare as
+	 * requests will be stuck on fput_head only if the aio_fput_routine is
 	 * delayed and the requests were the last user of the struct file.
 	 */
 	req = __aio_get_req(ctx);
@@ -899,7 +911,7 @@ static void try_queue_kicked_iocb(struct kiocb *iocb)
  */
 void kick_iocb(struct kiocb *iocb)
 {
-	/* sync iocbs are easy: they can only ever be executing from a 
+	/* sync iocbs are easy: they can only ever be executing from a
 	 * single context. */
 	if (is_sync_kiocb(iocb)) {
 		kiocbSetKicked(iocb);
@@ -913,7 +925,7 @@ EXPORT_SYMBOL(kick_iocb);
 
 /* aio_complete
  *	Called when the io request on the given iocb is complete.
- *	Returns true if this is the last user of the request.  The 
+ *	Returns true if this is the last user of the request.  The
  *	only other user of the request can be the cancellation code.
  */
 int aio_complete(struct kiocb *iocb, long res, long res2)
@@ -1018,7 +1030,7 @@ put_rq:
 }
 
 /* aio_read_evt
- *	Pull an event off of the ioctx's event ring.  Returns the number of 
+ *	Pull an event off of the ioctx's event ring.  Returns the number of
  *	events fetched (0 or 1 ;-)
  *	FIXME: make this use cmpxchg.
  *	TODO: make the ringbuffer user mmap()able (requires FIXME).
@@ -1109,7 +1121,7 @@ static int read_events(struct kioctx *ctx,
 	struct aio_timeout	to;
 	int			retry = 0;
 
-	/* needed to zero any padding within an entry (there shouldn't be 
+	/* needed to zero any padding within an entry (there shouldn't be
 	 * any, but C is fun!
 	 */
 	memset(&ent, 0, sizeof(ent));
@@ -1212,7 +1224,7 @@ out:
 	return i ? i : ret;
 }
 
-/* Take an ioctx and remove it from the list of ioctx's.  Protects 
+/* Take an ioctx and remove it from the list of ioctx's.  Protects
  * against races with itself via ->dead.
  */
 static void io_destroy(struct kioctx *ioctx)
@@ -1252,10 +1264,10 @@ static void io_destroy(struct kioctx *ioctx)
  *	Create an aio_context capable of receiving at least nr_events.
  *	ctxp must not point to an aio_context that already exists, and
  *	must be initialized to 0 prior to the call.  On successful
- *	creation of the aio_context, *ctxp is filled in with the resulting 
+ *	creation of the aio_context, *ctxp is filled in with the resulting
  *	handle.  May fail with -EINVAL if *ctxp is not initialized,
- *	if the specified nr_events exceeds internal limits.  May fail 
- *	with -EAGAIN if the specified nr_events exceeds the user's limit 
+ *	if the specified nr_events exceeds internal limits.  May fail
+ *	with -EAGAIN if the specified nr_events exceeds the user's limit
  *	of available events.  May fail with -ENOMEM if insufficient kernel
  *	resources are available.  May fail with -EFAULT if an invalid
  *	pointer is passed for ctxp.  Will fail with -ENOSYS if not
@@ -1279,6 +1291,7 @@ asmlinkage long sys_io_setup(unsigned nr_events, aio_context_t __user *ctxp)
 	}
 
 	ioctx = ioctx_alloc(nr_events); // 创建一个kioctx对象并初始化
+
 	ret = PTR_ERR(ioctx);
 	if (!IS_ERR(ioctx)) {
 		ret = put_user(ioctx->user_id, ctxp);
@@ -1294,7 +1307,7 @@ out:
 }
 
 /* sys_io_destroy:
- *	Destroy the aio_context specified.  May cancel any outstanding 
+ *	Destroy the aio_context specified.  May cancel any outstanding
  *	AIOs and block on completion.  Will fail with -ENOSYS if not
  *	implemented.  May fail with -EFAULT if the context pointed to
  *	is invalid.
@@ -1676,7 +1689,7 @@ asmlinkage long sys_io_submit(aio_context_t ctx_id, long nr,
 	 * AKPM: should this return a partial result if some of the IOs were
 	 * successfully submitted?
 	 */
-	for (i=0; i<nr; i++) {
+	for (i = 0; i < nr; i++) {
 		struct iocb __user *user_iocb;
 		struct iocb tmp;
 

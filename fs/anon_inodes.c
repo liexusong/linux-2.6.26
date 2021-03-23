@@ -68,7 +68,7 @@ static struct dentry_operations anon_inodefs_dentry_operations = {
  * setup.  Returns new descriptor or -error.
  */
 int anon_inode_getfd(const char *name, const struct file_operations *fops,
-		     void *priv)
+					 void *priv)
 {
 	struct qstr this;
 	struct dentry *dentry;
@@ -78,9 +78,10 @@ int anon_inode_getfd(const char *name, const struct file_operations *fops,
 	if (IS_ERR(anon_inode_inode))
 		return -ENODEV;
 
-	error = get_unused_fd();
+	error = get_unused_fd(); // 获取一个没有被使用的文件句柄
 	if (error < 0)
 		return error;
+
 	fd = error;
 
 	/*
@@ -91,6 +92,8 @@ int anon_inode_getfd(const char *name, const struct file_operations *fops,
 	this.name = name;
 	this.len = strlen(name);
 	this.hash = 0;
+
+	// 申请一个dentry对象
 	dentry = d_alloc(anon_inode_mnt->mnt_sb->s_root, &this);
 	if (!dentry)
 		goto err_put_unused_fd;
@@ -108,10 +111,11 @@ int anon_inode_getfd(const char *name, const struct file_operations *fops,
 	d_instantiate(dentry, anon_inode_inode);
 
 	error = -ENFILE;
-	file = alloc_file(anon_inode_mnt, dentry,
-			  FMODE_READ | FMODE_WRITE, fops);
+	// 申请一个文件描述符对象
+	file = alloc_file(anon_inode_mnt, dentry, FMODE_READ|FMODE_WRITE, fops);
 	if (!file)
 		goto err_dput;
+
 	file->f_mapping = anon_inode_inode->i_mapping;
 
 	file->f_pos = 0;

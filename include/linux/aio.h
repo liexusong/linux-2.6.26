@@ -9,15 +9,15 @@
 #include <asm/atomic.h>
 #include <linux/uio.h>
 
-#define AIO_MAXSEGS		4
+#define AIO_MAXSEGS				4
 #define AIO_KIOGRP_NR_ATOMIC	8
 
 struct kioctx;
 
 /* Notes on cancelling a kiocb:
- *	If a kiocb is cancelled, aio_complete may return 0 to indicate 
- *	that cancel has not yet disposed of the kiocb.  All cancel 
- *	operations *must* call aio_put_req to dispose of the kiocb 
+ *	If a kiocb is cancelled, aio_complete may return 0 to indicate
+ *	that cancel has not yet disposed of the kiocb.  All cancel
+ *	operations *must* call aio_put_req to dispose of the kiocb
  *	to guard against races with the completion code.
  */
 #define KIOCB_C_CANCELLED	0x01
@@ -32,22 +32,22 @@ struct kioctx;
  * think they can use it.
  */
 /* #define KIF_LOCKED		0 */
-#define KIF_KICKED		1
+#define KIF_KICKED			1
 #define KIF_CANCELLED		2
 
-#define kiocbTryLock(iocb)	test_and_set_bit(KIF_LOCKED, &(iocb)->ki_flags)
-#define kiocbTryKick(iocb)	test_and_set_bit(KIF_KICKED, &(iocb)->ki_flags)
+#define kiocbTryLock(iocb)		test_and_set_bit(KIF_LOCKED, &(iocb)->ki_flags)
+#define kiocbTryKick(iocb)		test_and_set_bit(KIF_KICKED, &(iocb)->ki_flags)
 
 #define kiocbSetLocked(iocb)	set_bit(KIF_LOCKED, &(iocb)->ki_flags)
 #define kiocbSetKicked(iocb)	set_bit(KIF_KICKED, &(iocb)->ki_flags)
 #define kiocbSetCancelled(iocb)	set_bit(KIF_CANCELLED, &(iocb)->ki_flags)
 
-#define kiocbClearLocked(iocb)	clear_bit(KIF_LOCKED, &(iocb)->ki_flags)
-#define kiocbClearKicked(iocb)	clear_bit(KIF_KICKED, &(iocb)->ki_flags)
+#define kiocbClearLocked(iocb)		clear_bit(KIF_LOCKED, &(iocb)->ki_flags)
+#define kiocbClearKicked(iocb)		clear_bit(KIF_KICKED, &(iocb)->ki_flags)
 #define kiocbClearCancelled(iocb)	clear_bit(KIF_CANCELLED, &(iocb)->ki_flags)
 
-#define kiocbIsLocked(iocb)	test_bit(KIF_LOCKED, &(iocb)->ki_flags)
-#define kiocbIsKicked(iocb)	test_bit(KIF_KICKED, &(iocb)->ki_flags)
+#define kiocbIsLocked(iocb)		test_bit(KIF_LOCKED, &(iocb)->ki_flags)
+#define kiocbIsKicked(iocb)		test_bit(KIF_KICKED, &(iocb)->ki_flags)
 #define kiocbIsCancelled(iocb)	test_bit(KIF_CANCELLED, &(iocb)->ki_flags)
 
 /* is there a better place to document function pointer methods? */
@@ -87,30 +87,30 @@ struct kioctx;
 struct kiocb {
 	struct list_head	ki_run_list;
 	unsigned long		ki_flags;
-	int			ki_users;
-	unsigned		ki_key;		/* id of this request */
+	int					ki_users;
+	unsigned			ki_key;		/* id of this request */
 
-	struct file		*ki_filp;
+	struct file			*ki_filp;
 	struct kioctx		*ki_ctx;	/* may be NULL for sync ops */
-	int			(*ki_cancel)(struct kiocb *, struct io_event *);
-	ssize_t			(*ki_retry)(struct kiocb *);
-	void			(*ki_dtor)(struct kiocb *);
+	int					(*ki_cancel)(struct kiocb *, struct io_event *);
+	ssize_t				(*ki_retry)(struct kiocb *);
+	void				(*ki_dtor)(struct kiocb *);
 
 	union {
-		void __user		*user;
+		void __user			*user;
 		struct task_struct	*tsk;
 	} ki_obj;
 
-	__u64			ki_user_data;	/* user's data for completion */
+	__u64				ki_user_data;	/* user's data for completion */
 	wait_queue_t		ki_wait;
-	loff_t			ki_pos;
+	loff_t				ki_pos;
 
-	void			*private;
+	void				*private;
 	/* State that we remember to be able to restart/retry  */
 	unsigned short		ki_opcode;
-	size_t			ki_nbytes; 	/* copy of iocb->aio_nbytes */
-	char 			__user *ki_buf;	/* remaining iocb->aio_buf */
-	size_t			ki_left; 	/* remaining bytes */
+	size_t				ki_nbytes; 	/* copy of iocb->aio_nbytes */
+	char 				__user *ki_buf;	/* remaining iocb->aio_buf */
+	size_t				ki_left; 	/* remaining bytes */
 	struct iovec		ki_inline_vec;	/* inline vector */
  	struct iovec		*ki_iovec;
  	unsigned long		ki_nr_segs;
@@ -128,19 +128,19 @@ struct kiocb {
 
 #define is_sync_kiocb(iocb)	((iocb)->ki_key == KIOCB_SYNC_KEY)
 #define init_sync_kiocb(x, filp)			\
-	do {						\
+	do {									\
 		struct task_struct *tsk = current;	\
-		(x)->ki_flags = 0;			\
-		(x)->ki_users = 1;			\
+		(x)->ki_flags = 0;					\
+		(x)->ki_users = 1;					\
 		(x)->ki_key = KIOCB_SYNC_KEY;		\
-		(x)->ki_filp = (filp);			\
-		(x)->ki_ctx = NULL;			\
-		(x)->ki_cancel = NULL;			\
-		(x)->ki_retry = NULL;			\
-		(x)->ki_dtor = NULL;			\
-		(x)->ki_obj.tsk = tsk;			\
-		(x)->ki_user_data = 0;                  \
-		init_wait((&(x)->ki_wait));             \
+		(x)->ki_filp = (filp);				\
+		(x)->ki_ctx = NULL;					\
+		(x)->ki_cancel = NULL;				\
+		(x)->ki_retry = NULL;				\
+		(x)->ki_dtor = NULL;				\
+		(x)->ki_obj.tsk = tsk;				\
+		(x)->ki_user_data = 0;				\
+		init_wait((&(x)->ki_wait));			\
 	} while (0)
 
 #define AIO_RING_MAGIC			0xa10a10a1
@@ -168,38 +168,35 @@ struct aio_ring_info {
 	unsigned long		mmap_base;
 	unsigned long		mmap_size;
 
-	struct page		**ring_pages;
-	spinlock_t		ring_lock;
-	long			nr_pages;
+	struct page			**ring_pages;
+	spinlock_t			ring_lock;
+	long				nr_pages;
 
-	unsigned		nr, tail;
+	unsigned			nr, tail;
 
-	struct page		*internal_pages[AIO_RING_PAGES];
+	struct page			*internal_pages[AIO_RING_PAGES];
 };
 
 struct kioctx {
-	atomic_t		users; // how many users ref
-	int			dead;
-	struct mm_struct	*mm;
+	atomic_t				users; // how many users refcount
+	int						dead;
+	struct mm_struct		*mm;
 
 	/* This needs improving */
-	unsigned long		user_id;
-	struct kioctx		*next;
+	unsigned long			user_id;
+	struct kioctx			*next;
 
-	wait_queue_head_t	wait; // wait queue
+	wait_queue_head_t		wait; // wait queue
+	spinlock_t				ctx_lock;
 
-	spinlock_t		ctx_lock;
-
-	int			reqs_active;
-	struct list_head	active_reqs;	/* used for cancellation */
-	struct list_head	run_list;	/* used for kicked reqs */
+	int						reqs_active;	// 活动请求数
+	struct list_head		active_reqs;	/* used for cancellation */
+	struct list_head		run_list;		/* used for kicked reqs */
 
 	/* sys_io_setup currently limits this to an unsigned int */
-	unsigned		max_reqs;
-
+	unsigned				max_reqs;
 	struct aio_ring_info	ring_info;
-
-	struct delayed_work	wq;
+	struct delayed_work		wq;
 };
 
 /* prototypes */

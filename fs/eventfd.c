@@ -82,8 +82,8 @@ static unsigned int eventfd_poll(struct file *file, poll_table *wait)
 	return events;
 }
 
-static ssize_t eventfd_read(struct file *file, char __user *buf, size_t count,
-			    loff_t *ppos)
+static ssize_t
+eventfd_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 {
 	struct eventfd_ctx *ctx = file->private_data;
 	ssize_t res;
@@ -92,12 +92,15 @@ static ssize_t eventfd_read(struct file *file, char __user *buf, size_t count,
 
 	if (count < sizeof(ucnt))
 		return -EINVAL;
+
 	spin_lock_irq(&ctx->wqh.lock);
+
 	res = -EAGAIN;
 	ucnt = ctx->count;
-	if (ucnt > 0)
+
+	if (ucnt > 0) {
 		res = sizeof(ucnt);
-	else if (!(file->f_flags & O_NONBLOCK)) {
+	} else if (!(file->f_flags & O_NONBLOCK)) {
 		__add_wait_queue(&ctx->wqh, &wait);
 		for (res = 0;;) {
 			set_current_state(TASK_INTERRUPTIBLE);
@@ -117,20 +120,24 @@ static ssize_t eventfd_read(struct file *file, char __user *buf, size_t count,
 		__remove_wait_queue(&ctx->wqh, &wait);
 		__set_current_state(TASK_RUNNING);
 	}
+
 	if (res > 0) {
 		ctx->count = 0;
 		if (waitqueue_active(&ctx->wqh))
 			wake_up_locked(&ctx->wqh);
 	}
+
 	spin_unlock_irq(&ctx->wqh.lock);
+
 	if (res > 0 && put_user(ucnt, (__u64 __user *) buf))
 		return -EFAULT;
 
 	return res;
 }
 
-static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t count,
-			     loff_t *ppos)
+static ssize_t
+eventfd_write(struct file *file, const char __user *buf, size_t count,
+			  loff_t *ppos)
 {
 	struct eventfd_ctx *ctx = file->private_data;
 	ssize_t res;
@@ -190,6 +197,7 @@ struct file *eventfd_fget(int fd)
 	file = fget(fd);
 	if (!file)
 		return ERR_PTR(-EBADF);
+
 	if (file->f_op != &eventfd_fops) {
 		fput(file);
 		return ERR_PTR(-EINVAL);
@@ -217,6 +225,7 @@ asmlinkage long sys_eventfd(unsigned int count)
 	fd = anon_inode_getfd("[eventfd]", &eventfd_fops, ctx);
 	if (fd < 0)
 		kfree(ctx);
+
 	return fd;
 }
 

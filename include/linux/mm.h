@@ -159,7 +159,7 @@ struct vm_fault {
 /*
  * These are the virtual MM functions - opening of an area, closing and
  * unmapping it (needed to keep files on disk up-to-date etc), pointer
- * to the functions called when a no-page or a wp-page exception occurs. 
+ * to the functions called when a no-page or a wp-page exception occurs.
  */
 struct vm_operations_struct {
 	void (*open)(struct vm_area_struct * area);
@@ -938,34 +938,34 @@ static inline void pgtable_page_dtor(struct page *page)
 }
 
 #define pte_offset_map_lock(mm, pmd, address, ptlp)	\
-({							\
-	spinlock_t *__ptl = pte_lockptr(mm, pmd);	\
+({													\
+	spinlock_t *__ptl = pte_lockptr(mm, pmd);		\
 	pte_t *__pte = pte_offset_map(pmd, address);	\
-	*(ptlp) = __ptl;				\
-	spin_lock(__ptl);				\
-	__pte;						\
+	*(ptlp) = __ptl;								\
+	spin_lock(__ptl);								\
+	__pte;											\
 })
 
-#define pte_unmap_unlock(pte, ptl)	do {		\
-	spin_unlock(ptl);				\
-	pte_unmap(pte);					\
+#define pte_unmap_unlock(pte, ptl)	do {			\
+	spin_unlock(ptl);								\
+	pte_unmap(pte);									\
 } while (0)
 
-#define pte_alloc_map(mm, pmd, address)			\
+#define pte_alloc_map(mm, pmd, address)									\
 	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))? \
 		NULL: pte_offset_map(pmd, address))
 
-#define pte_alloc_map_lock(mm, pmd, address, ptlp)	\
+#define pte_alloc_map_lock(mm, pmd, address, ptlp)						\
 	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))? \
 		NULL: pte_offset_map_lock(mm, pmd, address, ptlp))
 
-#define pte_alloc_kernel(pmd, address)			\
-	((unlikely(!pmd_present(*(pmd))) && __pte_alloc_kernel(pmd, address))? \
+#define pte_alloc_kernel(pmd, address)										\
+	((unlikely(!pmd_present(*(pmd))) && __pte_alloc_kernel(pmd, address))?	\
 		NULL: pte_offset_kernel(pmd, address))
 
 extern void free_area_init(unsigned long * zones_size);
 extern void free_area_init_node(int nid, pg_data_t *pgdat,
-	unsigned long * zones_size, unsigned long zone_start_pfn, 
+	unsigned long * zones_size, unsigned long zone_start_pfn,
 	unsigned long *zholes_size);
 #ifdef CONFIG_ARCH_POPULATES_NODE_MAP
 /*
@@ -1038,12 +1038,12 @@ void vma_prio_tree_remove(struct vm_area_struct *, struct prio_tree_root *);
 struct vm_area_struct *vma_prio_tree_next(struct vm_area_struct *vma,
 	struct prio_tree_iter *iter);
 
-#define vma_prio_tree_foreach(vma, iter, root, begin, end)	\
+#define vma_prio_tree_foreach(vma, iter, root, begin, end)			\
 	for (prio_tree_iter_init(iter, root, begin, end), vma = NULL;	\
 		(vma = vma_prio_tree_next(vma, iter)); )
 
 static inline void vma_nonlinear_insert(struct vm_area_struct *vma,
-					struct list_head *list)
+										struct list_head *list)
 {
 	vma->shared.vm_set.parent = NULL;
 	list_add_tail(&vma->shared.vm_set.list, list);
@@ -1082,28 +1082,34 @@ static inline void removed_exe_file_vma(struct mm_struct *mm)
 
 extern int may_expand_vm(struct mm_struct *mm, unsigned long npages);
 extern int install_special_mapping(struct mm_struct *mm,
-				   unsigned long addr, unsigned long len,
-				   unsigned long flags, struct page **pages);
+								   unsigned long addr, unsigned long len,
+								   unsigned long flags, struct page **pages);
 
-extern unsigned long get_unmapped_area(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+extern unsigned long get_unmapped_area(struct file *, unsigned long,
+									   unsigned long, unsigned long,
+									   unsigned long);
 
 extern unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
-	unsigned long len, unsigned long prot,
-	unsigned long flag, unsigned long pgoff);
+								   unsigned long len, unsigned long prot,
+								   unsigned long flag, unsigned long pgoff);
 extern unsigned long mmap_region(struct file *file, unsigned long addr,
-	unsigned long len, unsigned long flags,
-	unsigned int vm_flags, unsigned long pgoff,
-	int accountable);
+								 unsigned long len, unsigned long flags,
+								 unsigned int vm_flags, unsigned long pgoff,
+								 int accountable);
 
-static inline unsigned long do_mmap(struct file *file, unsigned long addr,
-	unsigned long len, unsigned long prot,
-	unsigned long flag, unsigned long offset)
+static inline unsigned long
+do_mmap(struct file *file, unsigned long addr,
+		unsigned long len, unsigned long prot,
+		unsigned long flag, unsigned long offset)
 {
 	unsigned long ret = -EINVAL;
+
 	if ((offset + PAGE_ALIGN(len)) < offset)
 		goto out;
+
 	if (!(offset & ~PAGE_MASK))
 		ret = do_mmap_pgoff(file, addr, len, prot, flag, offset >> PAGE_SHIFT);
+
 out:
 	return ret;
 }
@@ -1134,10 +1140,10 @@ int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
 			pgoff_t offset, unsigned long nr_to_read);
 
 void page_cache_sync_readahead(struct address_space *mapping,
-			       struct file_ra_state *ra,
-			       struct file *filp,
-			       pgoff_t offset,
-			       unsigned long size);
+						       struct file_ra_state *ra,
+						       struct file *filp,
+						       pgoff_t offset,
+						       unsigned long size);
 
 void page_cache_async_readahead(struct address_space *mapping,
 				struct file_ra_state *ra,
@@ -1163,7 +1169,9 @@ extern struct vm_area_struct * find_vma_prev(struct mm_struct * mm, unsigned lon
 
 /* Look up the first VMA which intersects the interval start_addr..end_addr-1,
    NULL if none.  Assume start_addr < end_addr. */
-static inline struct vm_area_struct * find_vma_intersection(struct mm_struct * mm, unsigned long start_addr, unsigned long end_addr)
+static inline struct vm_area_struct *
+find_vma_intersection(struct mm_struct * mm, unsigned long start_addr,
+					  unsigned long end_addr)
 {
 	struct vm_area_struct * vma = find_vma(mm,start_addr);
 
