@@ -69,7 +69,7 @@ static void aio_queue_work(struct kioctx *);
  */
 static int __init aio_setup(void)
 {
-	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+	kiocb_cachep  = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
 	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
 
 	aio_wq = create_workqueue("aio");
@@ -227,14 +227,15 @@ static void __put_ioctx(struct kioctx *ctx)
 	}
 }
 
-#define get_ioctx(kioctx) do {						\
-	BUG_ON(atomic_read(&(kioctx)->users) <= 0);			\
-	atomic_inc(&(kioctx)->users);					\
+#define get_ioctx(kioctx) do {								\
+	BUG_ON(atomic_read(&(kioctx)->users) <= 0);				\
+	atomic_inc(&(kioctx)->users);							\
 } while (0)
-#define put_ioctx(kioctx) do {						\
-	BUG_ON(atomic_read(&(kioctx)->users) <= 0);			\
-	if (unlikely(atomic_dec_and_test(&(kioctx)->users))) 		\
-		__put_ioctx(kioctx);					\
+
+#define put_ioctx(kioctx) do {								\
+	BUG_ON(atomic_read(&(kioctx)->users) <= 0);				\
+	if (unlikely(atomic_dec_and_test(&(kioctx)->users)))	\
+		__put_ioctx(kioctx);								\
 } while (0)
 
 /* ioctx_alloc
@@ -1043,9 +1044,10 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
 	int ret = 0;
 
 	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
+
 	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
-		 (unsigned long)ring->head, (unsigned long)ring->tail,
-		 (unsigned long)ring->nr);
+			(unsigned long)ring->head, (unsigned long)ring->tail,
+			(unsigned long)ring->nr);
 
 	if (ring->head == ring->tail)
 		goto out;
@@ -1062,18 +1064,21 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
 		ret = 1;
 		put_aio_ring_event(evp, KM_USER1);
 	}
+
 	spin_unlock(&info->ring_lock);
 
 out:
 	kunmap_atomic(ring, KM_USER0);
+
 	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
-		 (unsigned long)ring->head, (unsigned long)ring->tail);
+			(unsigned long)ring->head, (unsigned long)ring->tail);
+
 	return ret;
 }
 
 struct aio_timeout {
 	struct timer_list	timer;
-	int			timed_out;
+	int					timed_out;
 	struct task_struct	*p;
 };
 
@@ -1092,10 +1097,12 @@ static inline void init_timeout(struct aio_timeout *to)
 	to->p = current;
 }
 
-static inline void set_timeout(long start_jiffies, struct aio_timeout *to,
-			       const struct timespec *ts)
+static inline void
+set_timeout(long start_jiffies, struct aio_timeout *to,
+			const struct timespec *ts)
 {
 	to->timer.expires = start_jiffies + timespec_to_jiffies(ts);
+
 	if (time_after(to->timer.expires, jiffies))
 		add_timer(&to->timer);
 	else
@@ -1107,24 +1114,24 @@ static inline void clear_timeout(struct aio_timeout *to)
 	del_singleshot_timer_sync(&to->timer);
 }
 
-static int read_events(struct kioctx *ctx,
-			long min_nr, long nr,
-			struct io_event __user *event,
-			struct timespec __user *timeout)
+static int read_events(struct kioctx *ctx, long min_nr, long nr,
+					   struct io_event __user *event,
+					   struct timespec __user *timeout)
 {
-	long			start_jiffies = jiffies;
-	struct task_struct	*tsk = current;
+	long start_jiffies = jiffies;
+	struct task_struct *tsk = current;
 	DECLARE_WAITQUEUE(wait, tsk);
-	int			ret;
-	int			i = 0;
-	struct io_event		ent;
-	struct aio_timeout	to;
-	int			retry = 0;
+	int ret;
+	int i = 0;
+	struct io_event ent;
+	struct aio_timeout to;
+	int retry = 0;
 
 	/* needed to zero any padding within an entry (there shouldn't be
 	 * any, but C is fun!
 	 */
 	memset(&ent, 0, sizeof(ent));
+
 retry:
 	ret = 0;
 	while (likely(i < nr)) {
@@ -1150,6 +1157,7 @@ retry:
 
 	if (min_nr <= i)
 		return i;
+
 	if (ret)
 		return ret;
 
@@ -1213,8 +1221,8 @@ retry:
 		}
 
 		/* Good, event copied to userland, update counts. */
-		event ++;
-		i ++;
+		event++;
+		i++;
 	}
 
 	if (timeout)
@@ -1235,16 +1243,20 @@ static void io_destroy(struct kioctx *ioctx)
 
 	/* delete the entry from the list is someone else hasn't already */
 	write_lock(&mm->ioctx_list_lock);
+
 	was_dead = ioctx->dead;
 	ioctx->dead = 1;
-	for (tmp = &mm->ioctx_list; *tmp && *tmp != ioctx;
-	     tmp = &(*tmp)->next)
+
+	for (tmp = &mm->ioctx_list; *tmp && *tmp != ioctx; tmp = &(*tmp)->next)
 		;
+
 	if (*tmp)
 		*tmp = ioctx->next;
+
 	write_unlock(&mm->ioctx_list_lock);
 
 	dprintk("aio_release(%p)\n", ioctx);
+
 	if (likely(!was_dead))
 		put_ioctx(ioctx);	/* twice for the list */
 
@@ -1422,8 +1434,8 @@ static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb)
 	ssize_t ret;
 
 	ret = rw_copy_check_uvector(type, (struct iovec __user *)kiocb->ki_buf,
-				    kiocb->ki_nbytes, 1,
-				    &kiocb->ki_inline_vec, &kiocb->ki_iovec);
+							    kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
+							    &kiocb->ki_iovec);
 	if (ret < 0)
 		goto out;
 
@@ -1463,76 +1475,95 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
 		ret = -EBADF;
 		if (unlikely(!(file->f_mode & FMODE_READ)))
 			break;
+
 		ret = -EFAULT;
-		if (unlikely(!access_ok(VERIFY_WRITE, kiocb->ki_buf,
-			kiocb->ki_left)))
+		if (unlikely(!access_ok(VERIFY_WRITE, kiocb->ki_buf, kiocb->ki_left)))
 			break;
+
 		ret = security_file_permission(file, MAY_READ);
 		if (unlikely(ret))
 			break;
+
 		ret = aio_setup_single_vector(kiocb);
 		if (ret)
 			break;
+
 		ret = -EINVAL;
 		if (file->f_op->aio_read)
 			kiocb->ki_retry = aio_rw_vect_retry;
 		break;
+
 	case IOCB_CMD_PWRITE:
 		ret = -EBADF;
 		if (unlikely(!(file->f_mode & FMODE_WRITE)))
 			break;
+
 		ret = -EFAULT;
 		if (unlikely(!access_ok(VERIFY_READ, kiocb->ki_buf,
 			kiocb->ki_left)))
 			break;
+
 		ret = security_file_permission(file, MAY_WRITE);
 		if (unlikely(ret))
 			break;
+
 		ret = aio_setup_single_vector(kiocb);
 		if (ret)
 			break;
+
 		ret = -EINVAL;
 		if (file->f_op->aio_write)
 			kiocb->ki_retry = aio_rw_vect_retry;
 		break;
+
 	case IOCB_CMD_PREADV:
 		ret = -EBADF;
 		if (unlikely(!(file->f_mode & FMODE_READ)))
 			break;
+
 		ret = security_file_permission(file, MAY_READ);
 		if (unlikely(ret))
 			break;
+
 		ret = aio_setup_vectored_rw(READ, kiocb);
 		if (ret)
 			break;
+
 		ret = -EINVAL;
 		if (file->f_op->aio_read)
 			kiocb->ki_retry = aio_rw_vect_retry;
 		break;
+
 	case IOCB_CMD_PWRITEV:
 		ret = -EBADF;
 		if (unlikely(!(file->f_mode & FMODE_WRITE)))
 			break;
+
 		ret = security_file_permission(file, MAY_WRITE);
 		if (unlikely(ret))
 			break;
+
 		ret = aio_setup_vectored_rw(WRITE, kiocb);
 		if (ret)
 			break;
+
 		ret = -EINVAL;
 		if (file->f_op->aio_write)
 			kiocb->ki_retry = aio_rw_vect_retry;
 		break;
+
 	case IOCB_CMD_FDSYNC:
 		ret = -EINVAL;
 		if (file->f_op->aio_fsync)
 			kiocb->ki_retry = aio_fdsync;
 		break;
+
 	case IOCB_CMD_FSYNC:
 		ret = -EINVAL;
 		if (file->f_op->aio_fsync)
 			kiocb->ki_retry = aio_fsync;
 		break;
+
 	default:
 		dprintk("EINVAL: io_submit: no operation provided\n");
 		ret = -EINVAL;
@@ -1570,7 +1601,7 @@ static int aio_wake_function(wait_queue_t *wait, unsigned mode,
 }
 
 static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
-			 struct iocb *iocb)
+						 struct iocb *iocb)
 {
 	struct kiocb *req;
 	struct file *file;
@@ -1585,9 +1616,9 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 	/* prevent overflows */
 	if (unlikely(
 	    (iocb->aio_buf != (unsigned long)iocb->aio_buf) ||
-	    (iocb->aio_nbytes != (size_t)iocb->aio_nbytes) ||
-	    ((ssize_t)iocb->aio_nbytes < 0)
-	   )) {
+	    (iocb->aio_nbytes != (size_t)iocb->aio_nbytes)  ||
+	    ((ssize_t)iocb->aio_nbytes < 0)))
+	{
 		pr_debug("EINVAL: io_submit: overflow check\n");
 		return -EINVAL;
 	}
@@ -1601,6 +1632,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 		fput(file);
 		return -EAGAIN;
 	}
+
 	req->ki_filp = file;
 	if (iocb->aio_flags & IOCB_FLAG_RESFD) {
 		/*
@@ -1639,11 +1671,13 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 
 	spin_lock_irq(&ctx->ctx_lock);
 	aio_run_iocb(req);
+
 	if (!list_empty(&ctx->run_list)) {
 		/* drain the run list */
 		while (__aio_run_iocbs(ctx))
 			;
 	}
+
 	spin_unlock_irq(&ctx->ctx_lock);
 	aio_put_req(req);	/* drop extra ref to req */
 	return 0;
@@ -1666,8 +1700,9 @@ out_put_req:
  *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
  *	fail with -ENOSYS if not implemented.
  */
-asmlinkage long sys_io_submit(aio_context_t ctx_id, long nr,
-			      struct iocb __user * __user *iocbpp)
+asmlinkage long
+sys_io_submit(aio_context_t ctx_id, long nr,
+			  struct iocb __user * __user *iocbpp)
 {
 	struct kioctx *ctx;
 	long ret = 0;
@@ -1715,8 +1750,8 @@ asmlinkage long sys_io_submit(aio_context_t ctx_id, long nr,
 /* lookup_kiocb
  *	Finds a given iocb for cancellation.
  */
-static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
-				  u32 key)
+static struct kiocb *
+lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb, u32 key)
 {
 	struct list_head *pos;
 
@@ -1741,8 +1776,9 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
  *	invalid.  May fail with -EAGAIN if the iocb specified was not
  *	cancelled.  Will fail with -ENOSYS if not implemented.
  */
-asmlinkage long sys_io_cancel(aio_context_t ctx_id, struct iocb __user *iocb,
-			      struct io_event __user *result)
+asmlinkage long
+sys_io_cancel(aio_context_t ctx_id, struct iocb __user *iocb,
+			  struct io_event __user *result)
 {
 	int (*cancel)(struct kiocb *iocb, struct io_event *res);
 	struct kioctx *ctx;
@@ -1803,10 +1839,9 @@ asmlinkage long sys_io_cancel(aio_context_t ctx_id, struct iocb __user *iocb,
  *	will be updated if not NULL and the operation blocks.  Will fail
  *	with -ENOSYS if not implemented.
  */
-asmlinkage long sys_io_getevents(aio_context_t ctx_id,
-				 long min_nr,
-				 long nr,
-				 struct io_event __user *events,
+asmlinkage long
+sys_io_getevents(aio_context_t ctx_id, long min_nr,
+				 long nr, struct io_event __user *events,
 				 struct timespec __user *timeout)
 {
 	struct kioctx *ioctx = lookup_ioctx(ctx_id);
