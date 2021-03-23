@@ -771,7 +771,7 @@ ext2_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
 	struct inode *inode = file->f_mapping->host;
 
 	return blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
-				offset, nr_segs, ext2_get_block, NULL);
+							  offset, nr_segs, ext2_get_block, NULL);
 }
 
 static int
@@ -785,17 +785,17 @@ const struct address_space_operations ext2_aops = {
 	.readpages		= ext2_readpages,
 	.writepage		= ext2_writepage,
 	.sync_page		= block_sync_page,
-	.write_begin		= ext2_write_begin,
+	.write_begin	= ext2_write_begin,
 	.write_end		= generic_write_end,
 	.bmap			= ext2_bmap,
 	.direct_IO		= ext2_direct_IO,
 	.writepages		= ext2_writepages,
-	.migratepage		= buffer_migrate_page,
+	.migratepage	= buffer_migrate_page,
 };
 
 const struct address_space_operations ext2_aops_xip = {
 	.bmap			= ext2_bmap,
-	.get_xip_mem		= ext2_get_xip_mem,
+	.get_xip_mem	= ext2_get_xip_mem,
 };
 
 const struct address_space_operations ext2_nobh_aops = {
@@ -803,12 +803,12 @@ const struct address_space_operations ext2_nobh_aops = {
 	.readpages		= ext2_readpages,
 	.writepage		= ext2_nobh_writepage,
 	.sync_page		= block_sync_page,
-	.write_begin		= ext2_nobh_write_begin,
+	.write_begin	= ext2_nobh_write_begin,
 	.write_end		= nobh_write_end,
 	.bmap			= ext2_bmap,
 	.direct_IO		= ext2_direct_IO,
 	.writepages		= ext2_writepages,
-	.migratepage		= buffer_migrate_page,
+	.migratepage	= buffer_migrate_page,
 };
 
 /*
@@ -973,7 +973,7 @@ static void ext2_free_branches(struct inode *inode, __le32 *p, __le32 *q, int de
 			/*
 			 * A read failure? Report error and clear slot
 			 * (should be rare).
-			 */ 
+			 */
 			if (!bh) {
 				ext2_error(inode->i_sb, "ext2_free_branches",
 					"Read failure, inode=%ld, block=%ld",
@@ -1291,7 +1291,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 		if (raw_inode->i_block[0])
 			init_special_inode(inode, inode->i_mode,
 			   old_decode_dev(le32_to_cpu(raw_inode->i_block[0])));
-		else 
+		else
 			init_special_inode(inode, inode->i_mode,
 			   new_decode_dev(le32_to_cpu(raw_inode->i_block[1])));
 	}
@@ -1299,7 +1299,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
 	ext2_set_inode_flags(inode);
 	unlock_new_inode(inode);
 	return inode;
-	
+
 bad_inode:
 	iget_failed(inode);
 	return ERR_PTR(ret);
@@ -1381,7 +1381,7 @@ static int ext2_update_inode(struct inode * inode, int do_sync)
 			}
 		}
 	}
-	
+
 	raw_inode->i_generation = cpu_to_le32(inode->i_generation);
 	if (S_ISCHR(inode->i_mode) || S_ISBLK(inode->i_mode)) {
 		if (old_valid_dev(inode->i_rdev)) {

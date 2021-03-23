@@ -187,7 +187,7 @@ static int dio_refill_pages(struct dio *dio)
 		ret = 0;
 	}
 out:
-	return ret;	
+	return ret;
 }
 
 /*
@@ -262,7 +262,7 @@ static int dio_complete(struct dio *dio, loff_t offset, int ret)
 
 static int dio_bio_complete(struct dio *dio, struct bio *bio);
 /*
- * Asynchronous IO callback. 
+ * Asynchronous IO callback.
  */
 static void dio_bio_end_aio(struct bio *bio, int error)
 {
@@ -517,7 +517,7 @@ static int get_more_blocks(struct dio *dio)
 		dio_count = dio->final_block_in_request - dio->block_in_file;
 		fs_count = dio_count >> dio->blkfactor;
 		blkmask = (1 << dio->blkfactor) - 1;
-		if (dio_count & blkmask)	
+		if (dio_count & blkmask)
 			fs_count++;
 
 		map_bh->b_state = 0;
@@ -592,7 +592,7 @@ static int dio_bio_add_page(struct dio *dio)
 	}
 	return ret;
 }
-		
+
 /*
  * Put cur_page under IO.  The section of cur_page which is described by
  * cur_page_offset,cur_page_len is put into a BIO.  The section of cur_page
@@ -643,7 +643,7 @@ out:
  * An autonomous function to put a chunk of a page under deferred IO.
  *
  * The caller doesn't actually know (or care) whether this piece of page is in
- * a BIO, or is under IO or whatever.  We just take care of all possible 
+ * a BIO, or is under IO or whatever.  We just take care of all possible
  * situations here.  The separation between the logic of do_direct_IO() and
  * that of submit_page_section() is important for clarity.  Please don't break.
  *
@@ -758,13 +758,13 @@ static void dio_zero_block(struct dio *dio, int end)
 	 * We need to zero out part of an fs block.  It is either at the
 	 * beginning or the end of the fs block.
 	 */
-	if (end) 
+	if (end)
 		this_chunk_blocks = dio_blocks_per_fs_block - this_chunk_blocks;
 
 	this_chunk_bytes = this_chunk_blocks << dio->blkbits;
 
 	page = ZERO_PAGE(0);
-	if (submit_page_section(dio, page, 0, this_chunk_bytes, 
+	if (submit_page_section(dio, page, 0, this_chunk_bytes,
 				dio->next_block_for_io))
 		return;
 
@@ -937,12 +937,12 @@ out:
  * Releases both i_mutex and i_alloc_sem
  */
 static ssize_t
-direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode, 
-	const struct iovec *iov, loff_t offset, unsigned long nr_segs, 
+direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
+	const struct iovec *iov, loff_t offset, unsigned long nr_segs,
 	unsigned blkbits, get_block_t get_block, dio_iodone_t end_io,
 	struct dio *dio)
 {
-	unsigned long user_addr; 
+	unsigned long user_addr;
 	unsigned long flags;
 	int seg;
 	ssize_t ret = 0;
@@ -1000,12 +1000,11 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
 		}
 		dio->total_pages += (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
 		dio->curr_user_address = user_addr;
-	
+
 		ret = do_direct_IO(dio);
 
 		dio->result += iov[seg].iov_len -
-			((dio->final_block_in_request - dio->block_in_file) <<
-					blkbits);
+			((dio->final_block_in_request - dio->block_in_file) << blkbits);
 
 		if (ret) {
 			dio_cleanup(dio);
@@ -1061,8 +1060,10 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
 	 * This had *better* be the only place that raises -EIOCBQUEUED.
 	 */
 	BUG_ON(ret == -EIOCBQUEUED);
-	if (dio->is_async && ret == 0 && dio->result &&
-	    ((rw & READ) || (dio->result == dio->size)))
+	if (dio->is_async
+		&& ret == 0
+		&& dio->result
+	    && ((rw & READ) || (dio->result == dio->size)))
 		ret = -EIOCBQUEUED;
 
 	if (ret != -EIOCBQUEUED)
@@ -1114,10 +1115,16 @@ direct_io_worker(int rw, struct kiocb *iocb, struct inode *inode,
  * Additional i_alloc_sem locking requirements described inline below.
  */
 ssize_t
-__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
-	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
-	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
-	int dio_lock_type)
+__blockdev_direct_IO(int rw,
+					 struct kiocb *iocb,
+					 struct inode *inode,
+					 struct block_device *bdev,
+					 const struct iovec *iov,
+					 loff_t offset,
+					 unsigned long nr_segs,
+					 get_block_t get_block,
+					 dio_iodone_t end_io,
+					 int dio_lock_type)
 {
 	int seg;
 	size_t size;
@@ -1154,7 +1161,7 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
 			if (bdev)
 				 blkbits = bdev_blkbits;
 			blocksize_mask = (1 << blkbits) - 1;
-			if ((addr & blocksize_mask) || (size & blocksize_mask))  
+			if ((addr & blocksize_mask) || (size & blocksize_mask))
 				goto out;
 		}
 	}
@@ -1185,8 +1192,7 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
 				release_i_mutex = 1;
 			}
 
-			retval = filemap_write_and_wait_range(mapping, offset,
-							      end - 1);
+			retval = filemap_write_and_wait_range(mapping, offset, end - 1);
 			if (retval) {
 				kfree(dio);
 				goto out;
@@ -1209,11 +1215,13 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
 	 * even for AIO, we need to wait for i/o to complete before
 	 * returning in this case.
 	 */
-	dio->is_async = !is_sync_kiocb(iocb) && !((rw & WRITE) &&
-		(end > i_size_read(inode)));
+	// 判断是否异步IO操作
+	dio->is_async = !is_sync_kiocb(iocb)
+						&& !((rw & WRITE)
+						&& (end > i_size_read(inode)));
 
-	retval = direct_io_worker(rw, iocb, inode, iov, offset,
-				nr_segs, blkbits, get_block, end_io, dio);
+	retval = direct_io_worker(rw, iocb, inode, iov, offset, nr_segs, blkbits,
+							  get_block, end_io, dio);
 
 	if (rw == READ && dio_lock_type == DIO_LOCKING)
 		release_i_mutex = 0;

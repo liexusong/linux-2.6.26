@@ -107,32 +107,32 @@ force_commit:
 }
 
 const struct file_operations ext3_file_operations = {
-	.llseek		= generic_file_llseek,
-	.read		= do_sync_read,
-	.write		= do_sync_write,
-	.aio_read	= generic_file_aio_read,
-	.aio_write	= ext3_file_write,
-	.ioctl		= ext3_ioctl,
+	.llseek			= generic_file_llseek,
+	.read			= do_sync_read,
+	.write			= do_sync_write,
+	.aio_read		= generic_file_aio_read,
+	.aio_write		= ext3_file_write,
+	.ioctl			= ext3_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl	= ext3_compat_ioctl,
 #endif
-	.mmap		= generic_file_mmap,
-	.open		= generic_file_open,
-	.release	= ext3_release_file,
-	.fsync		= ext3_sync_file,
+	.mmap			= generic_file_mmap,
+	.open			= generic_file_open,
+	.release		= ext3_release_file,
+	.fsync			= ext3_sync_file,
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= generic_file_splice_write,
 };
 
 const struct inode_operations ext3_file_inode_operations = {
-	.truncate	= ext3_truncate,
-	.setattr	= ext3_setattr,
+	.truncate		= ext3_truncate,
+	.setattr		= ext3_setattr,
 #ifdef CONFIG_EXT3_FS_XATTR
-	.setxattr	= generic_setxattr,
-	.getxattr	= generic_getxattr,
-	.listxattr	= ext3_listxattr,
+	.setxattr		= generic_setxattr,
+	.getxattr		= generic_getxattr,
+	.listxattr		= ext3_listxattr,
 	.removexattr	= generic_removexattr,
 #endif
-	.permission	= ext3_permission,
+	.permission		= ext3_permission,
 };
 

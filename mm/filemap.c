@@ -1178,7 +1178,7 @@ EXPORT_SYMBOL(generic_segment_checks);
  */
 ssize_t
 generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
-		unsigned long nr_segs, loff_t pos)
+					  unsigned long nr_segs, loff_t pos)
 {
 	struct file *filp = iocb->ki_filp;
 	ssize_t retval;
@@ -1200,15 +1200,17 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
 		mapping = filp->f_mapping;
 		inode = mapping->host;
 		retval = 0;
+
 		if (!count)
 			goto out; /* skip atime */
+
 		size = i_size_read(inode);
 		if (pos < size) {
-			retval = generic_file_direct_IO(READ, iocb,
-						iov, pos, nr_segs);
+			retval = generic_file_direct_IO(READ, iocb, iov, pos, nr_segs);
 			if (retval > 0)
 				*ppos = pos + retval;
 		}
+
 		if (likely(retval != 0)) {
 			file_accessed(filp);
 			goto out;
@@ -2519,7 +2521,7 @@ EXPORT_SYMBOL(generic_file_aio_write);
  */
 static ssize_t
 generic_file_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
-	loff_t offset, unsigned long nr_segs)
+					   loff_t offset, unsigned long nr_segs)
 {
 	struct file *file = iocb->ki_filp;
 	struct address_space *mapping = file->f_mapping;
@@ -2535,8 +2537,9 @@ generic_file_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
 	if (rw == WRITE) {
 		write_len = iov_length(iov, nr_segs);
 		end = (offset + write_len - 1) >> PAGE_CACHE_SHIFT;
-	       	if (mapping_mapped(mapping))
-				unmap_mapping_range(mapping, offset, write_len, 0);
+
+		if (mapping_mapped(mapping))
+			unmap_mapping_range(mapping, offset, write_len, 0);
 	}
 
 	retval = filemap_write_and_wait(mapping);
@@ -2551,7 +2554,7 @@ generic_file_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
 	 */
 	if (rw == WRITE && mapping->nrpages) {
 		retval = invalidate_inode_pages2_range(mapping,
-					offset >> PAGE_CACHE_SHIFT, end);
+											   offset >> PAGE_CACHE_SHIFT, end);
 		if (retval)
 			goto out;
 	}

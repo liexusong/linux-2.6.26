@@ -647,10 +647,10 @@ static inline int __queue_kicked_iocb(struct kiocb *iocb)
 	assert_spin_locked(&ctx->ctx_lock);
 
 	if (list_empty(&iocb->ki_run_list)) {
-		list_add_tail(&iocb->ki_run_list,
-			&ctx->run_list);
+		list_add_tail(&iocb->ki_run_list, &ctx->run_list);
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -730,11 +730,11 @@ static ssize_t aio_run_iocb(struct kiocb *iocb)
 	 * context.
 	 */
 	ret = retry(iocb);
-
 	if (ret != -EIOCBRETRY && ret != -EIOCBQUEUED) {
 		BUG_ON(!list_empty(&iocb->ki_wait.task_list));
 		aio_complete(iocb, ret, 0);
 	}
+
 out:
 	spin_lock_irq(&ctx->ctx_lock);
 
@@ -762,6 +762,7 @@ out:
 			aio_queue_work(ctx);
 		}
 	}
+
 	return ret;
 }
 
@@ -780,9 +781,9 @@ static int __aio_run_iocbs(struct kioctx *ctx)
 	assert_spin_locked(&ctx->ctx_lock);
 
 	list_replace_init(&ctx->run_list, &run_list);
+
 	while (!list_empty(&run_list)) {
-		iocb = list_entry(run_list.next, struct kiocb,
-			ki_run_list);
+		iocb = list_entry(run_list.next, struct kiocb, ki_run_list);
 		list_del(&iocb->ki_run_list);
 		/*
 		 * Hold an extra reference while retrying i/o.
@@ -791,12 +792,14 @@ static int __aio_run_iocbs(struct kioctx *ctx)
 		aio_run_iocb(iocb);
 		__aio_put_req(ctx, iocb);
  	}
+
 	if (!list_empty(&ctx->run_list))
 		return 1;
+
 	return 0;
 }
 
-static void aio_queue_work(struct kioctx * ctx)
+static void aio_queue_work(struct kioctx *ctx)
 {
 	unsigned long timeout;
 	/*
@@ -808,6 +811,7 @@ static void aio_queue_work(struct kioctx * ctx)
 		timeout = 1;
 	else
 		timeout = HZ/10;
+
 	queue_delayed_work(aio_wq, &ctx->wq, timeout);
 }
 
@@ -867,6 +871,7 @@ static void aio_kick_handler(struct work_struct *work)
 	spin_unlock_irq(&ctx->ctx_lock);
  	unuse_mm(mm);
 	set_fs(oldfs);
+
 	/*
 	 * we're in a worker thread already, don't use queue_delayed_work,
 	 */
@@ -882,7 +887,7 @@ static void aio_kick_handler(struct work_struct *work)
  */
 static void try_queue_kicked_iocb(struct kiocb *iocb)
 {
- 	struct kioctx	*ctx = iocb->ki_ctx;
+ 	struct kioctx *ctx = iocb->ki_ctx;
 	unsigned long flags;
 	int run = 0;
 
@@ -899,6 +904,7 @@ static void try_queue_kicked_iocb(struct kiocb *iocb)
 	if (!kiocbTryKick(iocb))
 		run = __queue_kicked_iocb(iocb);
 	spin_unlock_irqrestore(&ctx->ctx_lock, flags);
+
 	if (run)
 		aio_queue_work(ctx);
 }
@@ -916,7 +922,7 @@ void kick_iocb(struct kiocb *iocb)
 	 * single context. */
 	if (is_sync_kiocb(iocb)) {
 		kiocbSetKicked(iocb);
-	        wake_up_process(iocb->ki_obj.tsk);
+		wake_up_process(iocb->ki_obj.tsk);
 		return;
 	}
 
@@ -1227,6 +1233,7 @@ retry:
 
 	if (timeout)
 		clear_timeout(&to);
+
 out:
 	destroy_timer_on_stack(&to.timer);
 	return i ? i : ret;
@@ -1344,8 +1351,9 @@ static void aio_advance_iovec(struct kiocb *iocb, ssize_t ret)
 	while (iocb->ki_cur_seg < iocb->ki_nr_segs && ret > 0) {
 		ssize_t this = min((ssize_t)iov->iov_len, ret);
 		iov->iov_base += this;
-		iov->iov_len -= this;
+		iov->iov_len  -= this;
 		iocb->ki_left -= this;
+
 		ret -= this;
 		if (iov->iov_len == 0) {
 			iocb->ki_cur_seg++;
@@ -1363,13 +1371,13 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb)
 	struct file *file = iocb->ki_filp;
 	struct address_space *mapping = file->f_mapping;
 	struct inode *inode = mapping->host;
-	ssize_t (*rw_op)(struct kiocb *, const struct iovec *,
-			 unsigned long, loff_t);
+	ssize_t (*rw_op)(struct kiocb *,const struct iovec *,unsigned long,loff_t);
 	ssize_t ret = 0;
 	unsigned short opcode;
 
-	if ((iocb->ki_opcode == IOCB_CMD_PREADV) ||
-		(iocb->ki_opcode == IOCB_CMD_PREAD)) {
+	if ((iocb->ki_opcode == IOCB_CMD_PREADV)
+		|| (iocb->ki_opcode == IOCB_CMD_PREAD))
+	{
 		rw_op = file->f_op->aio_read;
 		opcode = IOCB_CMD_PREADV;
 	} else {
@@ -1382,17 +1390,17 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb)
 		return -EINVAL;
 
 	do {
+		// 进行异步IO操作
 		ret = rw_op(iocb, &iocb->ki_iovec[iocb->ki_cur_seg],
-			    iocb->ki_nr_segs - iocb->ki_cur_seg,
-			    iocb->ki_pos);
+					iocb->ki_nr_segs - iocb->ki_cur_seg, iocb->ki_pos);
 		if (ret > 0)
 			aio_advance_iovec(iocb, ret);
 
 	/* retry all partial writes.  retry partial reads as long as its a
 	 * regular file. */
-	} while (ret > 0 && iocb->ki_left > 0 &&
-		 (opcode == IOCB_CMD_PWRITEV ||
-		  (!S_ISFIFO(inode->i_mode) && !S_ISSOCK(inode->i_mode))));
+	} while (ret > 0 && iocb->ki_left > 0
+			 && (opcode == IOCB_CMD_PWRITEV
+			     || (!S_ISFIFO(inode->i_mode) && !S_ISSOCK(inode->i_mode))));
 
 	/* This means we must have transferred all that we could */
 	/* No need to retry anymore */
@@ -1402,7 +1410,9 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb)
 	/* If we managed to write some out we return that, rather than
 	 * the eventual error. */
 	if (opcode == IOCB_CMD_PWRITEV
-	    && ret < 0 && ret != -EIOCBQUEUED && ret != -EIOCBRETRY
+	    && ret < 0
+	    && ret != -EIOCBQUEUED
+	    && ret != -EIOCBRETRY
 	    && iocb->ki_nbytes - iocb->ki_left)
 		ret = iocb->ki_nbytes - iocb->ki_left;
 
@@ -1590,8 +1600,8 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
  * because this callback isn't used for wait queues which
  * are nested inside ioctx lock (i.e. ctx->wait)
  */
-static int aio_wake_function(wait_queue_t *wait, unsigned mode,
-			     int sync, void *key)
+static int
+aio_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
 {
 	struct kiocb *iocb = container_of(wait, struct kiocb, ki_wait);
 
@@ -1634,6 +1644,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 	}
 
 	req->ki_filp = file;
+
 	if (iocb->aio_flags & IOCB_FLAG_RESFD) {
 		/*
 		 * If the IOCB_FLAG_RESFD flag of aio_flags is set, get an
@@ -1641,7 +1652,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 		 * an eventfd() fd, and will be signaled for each completed
 		 * event using the eventfd_signal() function.
 		 */
-		req->ki_eventfd = eventfd_fget((int) iocb->aio_resfd);
+		req->ki_eventfd = eventfd_fget((int)iocb->aio_resfd);
 		if (IS_ERR(req->ki_eventfd)) {
 			ret = PTR_ERR(req->ki_eventfd);
 			goto out_put_req;
@@ -1665,7 +1676,6 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
 	INIT_LIST_HEAD(&req->ki_wait.task_list);
 
 	ret = aio_setup_iocb(req);
-
 	if (ret)
 		goto out_put_req;
 
