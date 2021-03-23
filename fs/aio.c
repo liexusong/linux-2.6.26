@@ -132,11 +132,10 @@ static int aio_setup_ring(struct kioctx *ctx)
 	dprintk("attempting mmap of %lu bytes\n", info->mmap_size);
 	down_write(&ctx->mm->mmap_sem);
 
-	// 获取虚拟内存地址
+	// 申请虚拟内存地址
 	info->mmap_base = do_mmap(NULL, 0, info->mmap_size,
 							  PROT_READ|PROT_WRITE,
-							  MAP_ANONYMOUS|MAP_PRIVATE,
-							  0);
+							  MAP_ANONYMOUS|MAP_PRIVATE, 0);
 
 	if (IS_ERR((void *)info->mmap_base)) {
 		up_write(&ctx->mm->mmap_sem);
@@ -148,9 +147,8 @@ static int aio_setup_ring(struct kioctx *ctx)
 	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
 
 	// 映射物理内存地址
-	info->nr_pages = get_user_pages(current, ctx->mm,
-									info->mmap_base, nr_pages,
-									1, 0, info->ring_pages, NULL);
+	info->nr_pages = get_user_pages(current, ctx->mm, info->mmap_base,
+									nr_pages, 1, 0, info->ring_pages, NULL);
 
 	up_write(&ctx->mm->mmap_sem);
 

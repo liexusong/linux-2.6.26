@@ -984,7 +984,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
 	pud = pud_offset(pgd, address);
 	if (pud_none(*pud) || unlikely(pud_bad(*pud)))
 		goto no_page_table;
-	
+
 	pmd = pmd_offset(pud, address);
 	if (pmd_none(*pmd))
 		goto no_page_table;
@@ -1066,20 +1066,20 @@ static inline int use_zero_page(struct vm_area_struct *vma)
 }
 
 int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
-		unsigned long start, int len, int write, int force,
-		struct page **pages, struct vm_area_struct **vmas)
+				   unsigned long start, int len, int write, int force,
+				   struct page **pages, struct vm_area_struct **vmas)
 {
 	int i;
 	unsigned int vm_flags;
 
 	if (len <= 0)
 		return 0;
-	/* 
+	/*
 	 * Require read or write permissions.
 	 * If 'force' is set, we only require the "MAY" flags.
 	 */
-	vm_flags  = write ? (VM_WRITE | VM_MAYWRITE) : (VM_READ | VM_MAYREAD);
-	vm_flags &= force ? (VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
+	vm_flags  = write ? (VM_WRITE|VM_MAYWRITE)   : (VM_READ|VM_MAYREAD);
+	vm_flags &= force ? (VM_MAYREAD|VM_MAYWRITE) : (VM_READ|VM_WRITE);
 	i = 0;
 
 	do {
@@ -1094,12 +1094,15 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 			pud_t *pud;
 			pmd_t *pmd;
 			pte_t *pte;
+
 			if (write) /* user gate pages are read-only */
 				return i ? : -EFAULT;
+
 			if (pg > TASK_SIZE)
 				pgd = pgd_offset_k(pg);
 			else
 				pgd = pgd_offset_gate(mm, pg);
+
 			BUG_ON(pgd_none(*pgd));
 			pud = pud_offset(pgd, pg);
 			BUG_ON(pud_none(*pud));
