@@ -435,7 +435,7 @@ static inline int is_cow_mapping(unsigned int flags)
 # define HAVE_PTE_SPECIAL 0
 #endif
 struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
-				pte_t pte)
+							pte_t pte)
 {
 	unsigned long pfn;
 
@@ -1086,7 +1086,8 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 		struct vm_area_struct *vma;
 		unsigned int foll_flags;
 
-		vma = find_extend_vma(mm, start);
+		vma = find_extend_vma(mm, start); // 获取虚拟内存空间对应的vma
+
 		if (!vma && in_gate_area(tsk, start)) {
 			unsigned long pg = start & PAGE_MASK;
 			struct vm_area_struct *gate_vma = get_gate_vma(tsk);
@@ -1105,43 +1106,54 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 
 			BUG_ON(pgd_none(*pgd));
 			pud = pud_offset(pgd, pg);
+
 			BUG_ON(pud_none(*pud));
 			pmd = pmd_offset(pud, pg);
+
 			if (pmd_none(*pmd))
 				return i ? : -EFAULT;
+
 			pte = pte_offset_map(pmd, pg);
 			if (pte_none(*pte)) {
 				pte_unmap(pte);
 				return i ? : -EFAULT;
 			}
+
 			if (pages) {
 				struct page *page = vm_normal_page(gate_vma, start, *pte);
 				pages[i] = page;
 				if (page)
 					get_page(page);
 			}
+
 			pte_unmap(pte);
+
 			if (vmas)
 				vmas[i] = gate_vma;
+
 			i++;
 			start += PAGE_SIZE;
 			len--;
+
 			continue;
 		}
 
-		if (!vma || (vma->vm_flags & (VM_IO | VM_PFNMAP))
-				|| !(vm_flags & vma->vm_flags))
+		if (!vma
+			|| (vma->vm_flags & (VM_IO | VM_PFNMAP))
+			|| !(vm_flags & vma->vm_flags))
 			return i ? : -EFAULT;
 
 		if (is_vm_hugetlb_page(vma)) {
-			i = follow_hugetlb_page(mm, vma, pages, vmas,
-						&start, &len, i, write);
+			i = follow_hugetlb_page(mm, vma, pages, vmas, &start, &len, i,
+									write);
 			continue;
 		}
 
 		foll_flags = FOLL_TOUCH;
+
 		if (pages)
 			foll_flags |= FOLL_GET;
+
 		if (!write && use_zero_page(vma))
 			foll_flags |= FOLL_ANON;
 
@@ -1188,21 +1200,27 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
 
 				cond_resched();
 			}
+
 			if (IS_ERR(page))
 				return i ? i : PTR_ERR(page);
+
 			if (pages) {
 				pages[i] = page;
 
 				flush_anon_page(vma, page, start);
 				flush_dcache_page(page);
 			}
+
 			if (vmas)
 				vmas[i] = vma;
+
 			i++;
 			start += PAGE_SIZE;
 			len--;
+
 		} while (len && start < vma->vm_end);
 	} while (len);
+
 	return i;
 }
 EXPORT_SYMBOL(get_user_pages);

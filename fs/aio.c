@@ -146,7 +146,7 @@ static int aio_setup_ring(struct kioctx *ctx)
 
 	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
 
-	// 映射物理内存地址
+	// 将虚拟内存地址映射到物理内存地址
 	info->nr_pages = get_user_pages(current, ctx->mm, info->mmap_base,
 									nr_pages, 1, 0, info->ring_pages, NULL);
 
@@ -162,6 +162,7 @@ static int aio_setup_ring(struct kioctx *ctx)
 	info->nr = nr_events;		/* trusted copy */
 
 	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
+
 	ring->nr = nr_events;	/* user copy */
 	ring->id = ctx->user_id;
 	ring->head = ring->tail = 0;
@@ -169,6 +170,7 @@ static int aio_setup_ring(struct kioctx *ctx)
 	ring->compat_features = AIO_RING_COMPAT_FEATURES;
 	ring->incompat_features = AIO_RING_INCOMPAT_FEATURES;
 	ring->header_length = sizeof(struct aio_ring);
+
 	kunmap_atomic(ring, KM_USER0);
 
 	return 0;
