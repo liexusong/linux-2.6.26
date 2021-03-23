@@ -822,11 +822,13 @@ int set_page_dirty_lock(struct page *page);
 int clear_page_dirty_for_io(struct page *page);
 
 extern unsigned long move_page_tables(struct vm_area_struct *vma,
-		unsigned long old_addr, struct vm_area_struct *new_vma,
-		unsigned long new_addr, unsigned long len);
-extern unsigned long do_mremap(unsigned long addr,
-			       unsigned long old_len, unsigned long new_len,
-			       unsigned long flags, unsigned long new_addr);
+									  unsigned long old_addr,
+									  struct vm_area_struct *new_vma,
+									  unsigned long new_addr,
+									  unsigned long len);
+extern unsigned long do_mremap(unsigned long addr, unsigned long old_len,
+						       unsigned long new_len, unsigned long flags,
+						       unsigned long new_addr);
 extern int mprotect_fixup(struct vm_area_struct *vma,
 			  struct vm_area_struct **pprev, unsigned long start,
 			  unsigned long end, unsigned long newflags);
@@ -860,11 +862,12 @@ extern void unregister_shrinker(struct shrinker *);
 
 int vma_wants_writenotify(struct vm_area_struct *vma);
 
-extern pte_t *get_locked_pte(struct mm_struct *mm, unsigned long addr, spinlock_t **ptl);
+extern pte_t *get_locked_pte(struct mm_struct *mm, unsigned long addr,
+							 spinlock_t **ptl);
 
 #ifdef __PAGETABLE_PUD_FOLDED
 static inline int __pud_alloc(struct mm_struct *mm, pgd_t *pgd,
-						unsigned long address)
+							  unsigned long address)
 {
 	return 0;
 }
@@ -951,12 +954,12 @@ static inline void pgtable_page_dtor(struct page *page)
 	pte_unmap(pte);									\
 } while (0)
 
-#define pte_alloc_map(mm, pmd, address)									\
-	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))? \
+#define pte_alloc_map(mm, pmd, address)										\
+	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))?		\
 		NULL: pte_offset_map(pmd, address))
 
-#define pte_alloc_map_lock(mm, pmd, address, ptlp)						\
-	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))? \
+#define pte_alloc_map_lock(mm, pmd, address, ptlp)							\
+	((unlikely(!pmd_present(*(pmd))) && __pte_alloc(mm, pmd, address))?		\
 		NULL: pte_offset_map_lock(mm, pmd, address, ptlp))
 
 #define pte_alloc_kernel(pmd, address)										\
