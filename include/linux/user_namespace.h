@@ -7,10 +7,10 @@
 #include <linux/err.h>
 
 #define UIDHASH_BITS	(CONFIG_BASE_SMALL ? 3 : 8)
-#define UIDHASH_SZ	(1 << UIDHASH_BITS)
+#define UIDHASH_SZ		(1 << UIDHASH_BITS)
 
 struct user_namespace {
-	struct kref		kref;
+	struct kref			kref;
 	struct hlist_head	uidhash_table[UIDHASH_SZ];
 	struct user_struct	*root_user;
 };
@@ -19,7 +19,8 @@ extern struct user_namespace init_user_ns;
 
 #ifdef CONFIG_USER_NS
 
-static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+static inline struct user_namespace *
+get_user_ns(struct user_namespace *ns)
 {
 	if (ns)
 		kref_get(&ns->kref);
@@ -27,10 +28,11 @@ static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
 }
 
 extern struct user_namespace *copy_user_ns(int flags,
-					   struct user_namespace *old_ns);
+										   struct user_namespace *old_ns);
 extern void free_user_ns(struct kref *kref);
 
-static inline void put_user_ns(struct user_namespace *ns)
+static inline void
+put_user_ns(struct user_namespace *ns)
 {
 	if (ns)
 		kref_put(&ns->kref, free_user_ns);
@@ -38,13 +40,14 @@ static inline void put_user_ns(struct user_namespace *ns)
 
 #else
 
-static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
+static inline struct user_namespace *
+get_user_ns(struct user_namespace *ns)
 {
 	return &init_user_ns;
 }
 
-static inline struct user_namespace *copy_user_ns(int flags,
-						  struct user_namespace *old_ns)
+static inline struct user_namespace *
+copy_user_ns(int flags, struct user_namespace *old_ns)
 {
 	if (flags & CLONE_NEWUSER)
 		return ERR_PTR(-EINVAL);

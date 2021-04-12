@@ -1511,6 +1511,7 @@ static void moved_group_fair(struct task_struct *p)
  */
 static const struct sched_class fair_sched_class = {
 	.next				= &idle_sched_class,  // 下一个调度类为idle调度类
+
 	.enqueue_task		= enqueue_task_fair,  // 把一个调度实体插入到运行队列中
 	.dequeue_task		= dequeue_task_fair,  // 把一个调度实体从运行队列中删除
 	.yield_task			= yield_task_fair,    // 让出CPU(也就是进行调度操作)

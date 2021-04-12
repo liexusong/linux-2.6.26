@@ -339,7 +339,7 @@ static inline struct task_group *task_group(struct task_struct *p)
 	tg = p->user->tg;
 #elif defined(CONFIG_CGROUP_SCHED)
 	tg = container_of(task_subsys_state(p, cpu_cgroup_subsys_id),
-				struct task_group, css);
+					  struct task_group, css);
 #else
 	tg = &init_task_group;
 #endif
@@ -1098,10 +1098,12 @@ static void hrtick_set(struct rq *rq)
 	WARN_ON_ONCE(cpu_of(rq) != smp_processor_id());
 
 	spin_lock_irqsave(&rq->lock, flags);
+
 	set = __test_and_clear_bit(HRTICK_SET, &rq->hrtick_flags);
 	reset = __test_and_clear_bit(HRTICK_RESET, &rq->hrtick_flags);
 	time = rq->hrtick_expire;
 	clear_thread_flag(TIF_HRTICK_RESCHED);
+
 	spin_unlock_irqrestore(&rq->lock, flags);
 
 	if (set) {

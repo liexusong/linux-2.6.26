@@ -46,19 +46,17 @@ void module_free(struct module *mod, void *module_region)
 }
 
 /* We don't need anything special. */
-int module_frob_arch_sections(Elf_Ehdr *hdr,
-			      Elf_Shdr *sechdrs,
-			      char *secstrings,
-			      struct module *mod)
+int module_frob_arch_sections(Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
+						      char *secstrings, struct module *mod)
 {
 	return 0;
 }
 
 int apply_relocate(Elf32_Shdr *sechdrs,
-		   const char *strtab,
-		   unsigned int symindex,
-		   unsigned int relsec,
-		   struct module *me)
+				   const char *strtab,
+				   unsigned int symindex,
+				   unsigned int relsec,
+				   struct module *me)
 {
 	unsigned int i;
 	Elf32_Rel *rel = (void *)sechdrs[relsec].sh_addr;
@@ -67,15 +65,18 @@ int apply_relocate(Elf32_Shdr *sechdrs,
 
 	DEBUGP("Applying relocate section %u to %u\n", relsec,
 	       sechdrs[relsec].sh_info);
+
 	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
 		/* This is where to make the change */
 		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-			+ rel[i].r_offset;
+													+ rel[i].r_offset;
+
 		/* This is the symbol it is referring to.  Note that all
 		   undefined symbols have been resolved.  */
 		sym = (Elf32_Sym *)sechdrs[symindex].sh_addr
-			+ ELF32_R_SYM(rel[i].r_info);
+						+ ELF32_R_SYM(rel[i].r_info);
 
+		// 修正重定位的数据地址
 		switch (ELF32_R_TYPE(rel[i].r_info)) {
 		case R_386_32:
 			/* We add the value into the location given */
@@ -91,6 +92,7 @@ int apply_relocate(Elf32_Shdr *sechdrs,
 			return -ENOEXEC;
 		}
 	}
+
 	return 0;
 }
 
@@ -113,7 +115,7 @@ int module_finalize(const Elf_Ehdr *hdr,
 		*para = NULL;
 	char *secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
 
-	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) { 
+	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
 		if (!strcmp(".text", secstrings + s->sh_name))
 			text = s;
 		if (!strcmp(".altinstructions", secstrings + s->sh_name))

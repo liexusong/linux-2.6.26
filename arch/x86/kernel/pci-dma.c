@@ -277,15 +277,15 @@ void *dma_mark_declared_memory_occupied(struct device *dev,
 }
 EXPORT_SYMBOL(dma_mark_declared_memory_occupied);
 
-static int dma_alloc_from_coherent_mem(struct device *dev, ssize_t size,
-				       dma_addr_t *dma_handle, void **ret)
+static int
+dma_alloc_from_coherent_mem(struct device *dev, ssize_t size,
+							dma_addr_t *dma_handle, void **ret)
 {
 	struct dma_coherent_mem *mem = dev ? dev->dma_mem : NULL;
 	int order = get_order(size);
 
 	if (mem) {
-		int page = bitmap_find_free_region(mem->bitmap, mem->size,
-						     order);
+		int page = bitmap_find_free_region(mem->bitmap, mem->size, order);
 		if (page >= 0) {
 			*dma_handle = mem->device_base + (page << PAGE_SHIFT);
 			*ret = mem->virt_base + (page << PAGE_SHIFT);
@@ -372,7 +372,7 @@ dma_alloc_pages(struct device *dev, gfp_t gfp, unsigned order)
  */
 void *
 dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle,
-		   gfp_t gfp)
+				   gfp_t gfp)
 {
 	void *memory = NULL;
 	struct page *page;
@@ -390,6 +390,7 @@ dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle,
 		dev = &fallback_dev;
 		gfp |= GFP_DMA;
 	}
+
 	dma_mask = dev->coherent_dma_mask;
 	if (dma_mask == 0)
 		dma_mask = (gfp & GFP_DMA) ? DMA_24BIT_MASK : DMA_32BIT_MASK;
@@ -415,22 +416,23 @@ dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle,
 #endif
 
  again:
-	page = dma_alloc_pages(dev,
-		noretry ? gfp | __GFP_NORETRY : gfp, get_order(size));
+ 	// 申请内存页
+	page = dma_alloc_pages(dev, noretry?gfp|__GFP_NORETRY:gfp, get_order(size));
 	if (page == NULL)
 		return NULL;
 
 	{
 		int high, mmu;
+
 		bus = page_to_phys(page);
 		memory = page_address(page);
 		high = (bus + size) >= dma_mask;
 		mmu = high;
-		if (force_iommu && !(gfp & GFP_DMA))
+
+		if (force_iommu && !(gfp & GFP_DMA)) {
 			mmu = 1;
-		else if (high) {
-			free_pages((unsigned long)memory,
-				   get_order(size));
+		} else if (high) {
+			free_pages((unsigned long)memory, get_order(size));
 
 			/* Don't use the 16MB ZONE_DMA unless absolutely
 			   needed. It's better to use remapping first. */
@@ -443,8 +445,7 @@ dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle,
 			gfp &= ~(GFP_DMA32|GFP_DMA);
 
 			if (dma_ops->alloc_coherent)
-				return dma_ops->alloc_coherent(dev, size,
-							   dma_handle, gfp);
+				return dma_ops->alloc_coherent(dev, size, dma_handle, gfp);
 			return NULL;
 		}
 
@@ -463,8 +464,7 @@ dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle,
 
 	if (dma_ops->map_simple) {
 		*dma_handle = dma_ops->map_simple(dev, virt_to_phys(memory),
-					      size,
-					      PCI_DMA_BIDIRECTIONAL);
+										  size, PCI_DMA_BIDIRECTIONAL);
 		if (*dma_handle != bad_dma_address)
 			return memory;
 	}

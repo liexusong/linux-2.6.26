@@ -48,7 +48,7 @@ static const char e1000_copyright[] = "Copyright (c) 1999-2006 Intel Corporation
  *   {PCI_DEVICE(PCI_VENDOR_ID_INTEL, device_id)}
  */
 #ifdef CONFIG_E1000E_ENABLED
-  #define PCIE(x) 
+  #define PCIE(x)
 #else
   #define PCIE(x) x,
 #endif
@@ -1815,18 +1815,20 @@ e1000_configure_tx(struct e1000_adapter *adapter)
 
 static int
 e1000_setup_rx_resources(struct e1000_adapter *adapter,
-                         struct e1000_rx_ring *rxdr)
+						 struct e1000_rx_ring *rxdr)
 {
 	struct pci_dev *pdev = adapter->pdev;
 	int size, desc_len;
 
 	size = sizeof(struct e1000_buffer) * rxdr->count;
+
 	rxdr->buffer_info = vmalloc(size);
 	if (!rxdr->buffer_info) {
 		DPRINTK(PROBE, ERR,
 		"Unable to allocate memory for the receive descriptor ring\n");
 		return -ENOMEM;
 	}
+
 	memset(rxdr->buffer_info, 0, size);
 
 	rxdr->ps_page = kcalloc(rxdr->count, sizeof(struct e1000_ps_page),
@@ -1838,8 +1840,7 @@ e1000_setup_rx_resources(struct e1000_adapter *adapter,
 		return -ENOMEM;
 	}
 
-	rxdr->ps_page_dma = kcalloc(rxdr->count,
-	                            sizeof(struct e1000_ps_page_dma),
+	rxdr->ps_page_dma = kcalloc(rxdr->count, sizeof(struct e1000_ps_page_dma),
 	                            GFP_KERNEL);
 	if (!rxdr->ps_page_dma) {
 		vfree(rxdr->buffer_info);

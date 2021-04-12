@@ -58,11 +58,11 @@ enum kobject_action {
 };
 
 struct kobject {
-	const char		*name;
-	struct kref		kref;
+	const char			*name;
+	struct kref			kref;
 	struct list_head	entry;
 	struct kobject		*parent;
-	struct kset		*kset;
+	struct kset			*kset;
 	struct kobj_type	*ktype;
 	struct sysfs_dirent	*sd;
 	unsigned int state_initialized:1;
@@ -74,19 +74,20 @@ struct kobject {
 extern int kobject_set_name(struct kobject *kobj, const char *name, ...)
 			    __attribute__((format(printf, 2, 3)));
 
-static inline const char *kobject_name(const struct kobject *kobj)
+static inline const char *
+kobject_name(const struct kobject *kobj)
 {
 	return kobj->name;
 }
 
 extern void kobject_init(struct kobject *kobj, struct kobj_type *ktype);
 extern int __must_check kobject_add(struct kobject *kobj,
-				    struct kobject *parent,
-				    const char *fmt, ...);
+								    struct kobject *parent,
+								    const char *fmt, ...);
 extern int __must_check kobject_init_and_add(struct kobject *kobj,
-					     struct kobj_type *ktype,
-					     struct kobject *parent,
-					     const char *fmt, ...);
+										     struct kobj_type *ktype,
+										     struct kobject *parent,
+										     const char *fmt, ...);
 
 extern void kobject_del(struct kobject *kobj);
 
@@ -197,29 +198,40 @@ extern struct kobject *firmware_kobj;
 #if defined(CONFIG_HOTPLUG)
 int kobject_uevent(struct kobject *kobj, enum kobject_action action);
 int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
-			char *envp[]);
+					   char *envp[]);
 
 int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
 	__attribute__((format (printf, 2, 3)));
 
 int kobject_action_type(const char *buf, size_t count,
-			enum kobject_action *type);
+						enum kobject_action *type);
+
 #else
-static inline int kobject_uevent(struct kobject *kobj,
-				 enum kobject_action action)
-{ return 0; }
-static inline int kobject_uevent_env(struct kobject *kobj,
-				      enum kobject_action action,
-				      char *envp[])
-{ return 0; }
 
-static inline int add_uevent_var(struct kobj_uevent_env *env,
-				 const char *format, ...)
-{ return 0; }
+static inline int
+kobject_uevent(struct kobject *kobj, enum kobject_action action)
+{
+	return 0;
+}
 
-static inline int kobject_action_type(const char *buf, size_t count,
-				      enum kobject_action *type)
-{ return -EINVAL; }
+static inline int
+kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+				   char *envp[])
+{
+	return 0;
+}
+
+static inline int
+add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
+{
+	return 0;
+}
+
+static inline int
+kobject_action_type(const char *buf, size_t count, enum kobject_action *type)
+{
+	return -EINVAL;
+}
 #endif
 
 #endif /* _KOBJECT_H_ */

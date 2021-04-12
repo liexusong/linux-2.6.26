@@ -112,17 +112,16 @@ void __module_put_and_exit(struct module *mod, long code)
 EXPORT_SYMBOL(__module_put_and_exit);
 
 /* Find a module section: 0 means not found. */
-static unsigned int find_sec(Elf_Ehdr *hdr,
-			     Elf_Shdr *sechdrs,
-			     const char *secstrings,
-			     const char *name)
+static unsigned
+int find_sec(Elf_Ehdr *hdr, Elf_Shdr *sechdrs, const char *secstrings,
+			 const char *name)
 {
 	unsigned int i;
 
 	for (i = 1; i < hdr->e_shnum; i++)
 		/* Alloc bit cleared means "ignore it." */
 		if ((sechdrs[i].sh_flags & SHF_ALLOC)
-		    && strcmp(secstrings+sechdrs[i].sh_name, name) == 0)
+		    && strcmp(secstrings + sechdrs[i].sh_name, name) == 0)
 			return i;
 	return 0;
 }
@@ -153,14 +152,16 @@ extern const unsigned long __start___kcrctab_unused_gpl[];
 #endif
 
 /* lookup symbol in given range of kernel_symbols */
-static const struct kernel_symbol *lookup_symbol(const char *name,
-	const struct kernel_symbol *start,
-	const struct kernel_symbol *stop)
+static const struct kernel_symbol *
+lookup_symbol(const char *name, const struct kernel_symbol *start,
+			  const struct kernel_symbol *stop)
 {
 	const struct kernel_symbol *ks = start;
+
 	for (; ks < stop; ks++)
 		if (strcmp(ks->name, name) == 0)
 			return ks;
+
 	return NULL;
 }
 
@@ -218,12 +219,10 @@ struct symsearch {
 
 /* Look through this array of symbol tables for a symbol match which
  * passes the check function. */
-static const struct kernel_symbol *search_symarrays(const struct symsearch *arr,
-						    unsigned int num,
-						    const char *name,
-						    bool gplok,
-						    bool warn,
-						    const unsigned long **crc)
+static const struct kernel_symbol *
+search_symarrays(const struct symsearch *arr, unsigned int num,
+				 const char *name, bool gplok, bool warn,
+				 const unsigned long **crc)
 {
 	unsigned int i;
 	const struct kernel_symbol *ks;
@@ -237,33 +236,55 @@ static const struct kernel_symbol *search_symarrays(const struct symsearch *arr,
 			*crc = symversion(arr[i].crcs, ks - arr[i].start);
 		return ks;
 	}
+
 	return NULL;
 }
 
 /* Find a symbol, return value, (optional) crc and (optional) module
  * which owns it */
 static unsigned long find_symbol(const char *name,
-				 struct module **owner,
-				 const unsigned long **crc,
-				 bool gplok,
-				 bool warn)
+								 struct module **owner, // 符号属于哪个模块? 如果是内核的, 那么设置为NULL
+								 const unsigned long **crc,
+								 bool gplok,
+								 bool warn)
 {
 	struct module *mod;
 	const struct kernel_symbol *ks;
 	const struct symsearch arr[] = {
-		{ __start___ksymtab, __stop___ksymtab, __start___kcrctab,
-		  always_ok },
-		{ __start___ksymtab_gpl, __stop___ksymtab_gpl,
-		  __start___kcrctab_gpl, gpl_only },
-		{ __start___ksymtab_gpl_future, __stop___ksymtab_gpl_future,
-		  __start___kcrctab_gpl_future, warn_if_not_gpl },
-		{ __start___ksymtab_unused, __stop___ksymtab_unused,
-		  __start___kcrctab_unused, printk_unused_warning },
-		{ __start___ksymtab_unused_gpl, __stop___ksymtab_unused_gpl,
-		  __start___kcrctab_unused_gpl, gpl_only_unused_warning },
+		{
+			__start___ksymtab,
+			__stop___ksymtab,
+			__start___kcrctab,
+			always_ok
+		},
+		{
+			__start___ksymtab_gpl,
+			__stop___ksymtab_gpl,
+			__start___kcrctab_gpl,
+			gpl_only
+		},
+		{
+			__start___ksymtab_gpl_future,
+			__stop___ksymtab_gpl_future,
+			__start___kcrctab_gpl_future,
+			warn_if_not_gpl
+		},
+		{
+			__start___ksymtab_unused,
+			__stop___ksymtab_unused,
+			__start___kcrctab_unused,
+			printk_unused_warning
+		},
+		{
+			__start___ksymtab_unused_gpl,
+			__stop___ksymtab_unused_gpl,
+			__start___kcrctab_unused_gpl,
+			gpl_only_unused_warning
+		},
 	};
 
 	/* Core kernel first. */
+	// 首先从内核导出符号表中查找
 	ks = search_symarrays(arr, ARRAY_SIZE(arr), name, gplok, warn, crc);
 	if (ks) {
 		if (owner)
@@ -272,25 +293,41 @@ static unsigned long find_symbol(const char *name,
 	}
 
 	/* Now try modules. */
+	// 如果内核找不到符号, 那么从模块导出符号表中查找
 	list_for_each_entry(mod, &modules, list) {
 		struct symsearch arr[] = {
-			{ mod->syms, mod->syms + mod->num_syms, mod->crcs,
-			  always_ok },
-			{ mod->gpl_syms, mod->gpl_syms + mod->num_gpl_syms,
-			  mod->gpl_crcs, gpl_only },
+			{
+				mod->syms,
+				mod->syms + mod->num_syms,
+				mod->crcs,
+				always_ok
+			},
+			{
+				mod->gpl_syms,
+				mod->gpl_syms + mod->num_gpl_syms,
+				mod->gpl_crcs,
+				gpl_only
+			},
 			{ mod->gpl_future_syms,
 			  mod->gpl_future_syms + mod->num_gpl_future_syms,
-			  mod->gpl_future_crcs, warn_if_not_gpl },
-			{ mod->unused_syms,
-			  mod->unused_syms + mod->num_unused_syms,
-			  mod->unused_crcs, printk_unused_warning },
-			{ mod->unused_gpl_syms,
-			  mod->unused_gpl_syms + mod->num_unused_gpl_syms,
-			  mod->unused_gpl_crcs, gpl_only_unused_warning },
+			  mod->gpl_future_crcs,
+			  warn_if_not_gpl
+			},
+			{
+				mod->unused_syms,
+				mod->unused_syms + mod->num_unused_syms,
+				mod->unused_crcs,
+				printk_unused_warning
+			},
+			{
+				mod->unused_gpl_syms,
+				mod->unused_gpl_syms + mod->num_unused_gpl_syms,
+				mod->unused_gpl_crcs,
+				gpl_only_unused_warning
+			},
 		};
 
-		ks = search_symarrays(arr, ARRAY_SIZE(arr),
-				      name, gplok, warn, crc);
+		ks = search_symarrays(arr, ARRAY_SIZE(arr), name, gplok, warn, crc);
 		if (ks) {
 			if (owner)
 				*owner = mod;
@@ -907,7 +944,7 @@ static int try_to_force_load(struct module *mod, const char *symname)
 static int check_version(Elf_Shdr *sechdrs,
 			 unsigned int versindex,
 			 const char *symname,
-			 struct module *mod, 
+			 struct module *mod,
 			 const unsigned long *crc)
 {
 	unsigned int i, num_versions;
@@ -971,7 +1008,7 @@ static inline int same_magic(const char *amagic, const char *bmagic,
 static inline int check_version(Elf_Shdr *sechdrs,
 				unsigned int versindex,
 				const char *symname,
-				struct module *mod, 
+				struct module *mod,
 				const unsigned long *crc)
 {
 	return 1;
@@ -993,24 +1030,24 @@ static inline int same_magic(const char *amagic, const char *bmagic,
 
 /* Resolve a symbol for this module.  I.e. if we find one, record usage.
    Must be holding module_mutex. */
-static unsigned long resolve_symbol(Elf_Shdr *sechdrs,
-				    unsigned int versindex,
-				    const char *name,
-				    struct module *mod)
+static unsigned long resolve_symbol(Elf_Shdr *sechdrs, unsigned int versindex,
+									const char *name, struct module *mod)
 {
 	struct module *owner;
 	unsigned long ret;
 	const unsigned long *crc;
 
 	ret = find_symbol(name, &owner, &crc,
-			  !(mod->taints & TAINT_PROPRIETARY_MODULE), true);
+					  !(mod->taints & TAINT_PROPRIETARY_MODULE), true);
+
 	if (!IS_ERR_VALUE(ret)) {
 		/* use_module can fail due to OOM,
 		   or module initialization or unloading */
-		if (!check_version(sechdrs, versindex, name, mod, crc) ||
-		    !use_module(mod, owner))
+		if (!check_version(sechdrs, versindex, name, mod, crc)
+		    || !use_module(mod, owner))
 			ret = -EINVAL;
 	}
+
 	return ret;
 }
 
@@ -1466,13 +1503,13 @@ static int verify_export_symbols(struct module *mod)
 
 /* Change all symbols so that st_value encodes the pointer directly. */
 static int simplify_symbols(Elf_Shdr *sechdrs,
-			    unsigned int symindex,
-			    const char *strtab,
-			    unsigned int versindex,
-			    unsigned int pcpuindex,
-			    struct module *mod)
+						    unsigned int symindex,
+						    const char *strtab,
+						    unsigned int versindex,
+						    unsigned int pcpuindex,
+						    struct module *mod)
 {
-	Elf_Sym *sym = (void *)sechdrs[symindex].sh_addr;
+	Elf_Sym *sym = (void *)sechdrs[symindex].sh_addr; // 符号表地址
 	unsigned long secbase;
 	unsigned int i, n = sechdrs[symindex].sh_size / sizeof(Elf_Sym);
 	int ret = 0;
@@ -1483,31 +1520,29 @@ static int simplify_symbols(Elf_Shdr *sechdrs,
 			/* We compiled with -fno-common.  These are not
 			   supposed to happen.  */
 			DEBUGP("Common symbol: %s\n", strtab + sym[i].st_name);
-			printk("%s: please compile with -fno-common\n",
-			       mod->name);
+			printk("%s: please compile with -fno-common\n", mod->name);
 			ret = -ENOEXEC;
 			break;
 
 		case SHN_ABS:
 			/* Don't need to do anything */
-			DEBUGP("Absolute symbol: 0x%08lx\n",
-			       (long)sym[i].st_value);
+			DEBUGP("Absolute symbol: 0x%08lx\n", (long)sym[i].st_value);
 			break;
 
-		case SHN_UNDEF:
-			sym[i].st_value
-			  = resolve_symbol(sechdrs, versindex,
-					   strtab + sym[i].st_name, mod);
+		case SHN_UNDEF: // 未解决的符号
+			sym[i].st_value = resolve_symbol(sechdrs, versindex,
+											 strtab + sym[i].st_name, mod);
 
 			/* Ok if resolved.  */
 			if (!IS_ERR_VALUE(sym[i].st_value))
 				break;
+
 			/* Ok if weak.  */
 			if (ELF_ST_BIND(sym[i].st_info) == STB_WEAK)
 				break;
 
 			printk(KERN_WARNING "%s: Unknown symbol %s\n",
-			       mod->name, strtab + sym[i].st_name);
+				   mod->name, strtab + sym[i].st_name);
 			ret = -ENOENT;
 			break;
 
@@ -1539,19 +1574,18 @@ static long get_offset(unsigned long *size, Elf_Shdr *sechdr)
    might -- code, read-only data, read-write data, small data.  Tally
    sizes, and place the offsets into sh_entsize fields: high bit means it
    belongs in init. */
-static void layout_sections(struct module *mod,
-			    const Elf_Ehdr *hdr,
-			    Elf_Shdr *sechdrs,
+static void
+layout_sections(struct module *mod, const Elf_Ehdr *hdr, Elf_Shdr *sechdrs,
 			    const char *secstrings)
 {
 	static unsigned long const masks[][2] = {
 		/* NOTE: all executable code must be the first section
 		 * in this array; otherwise modify the text_size
 		 * finder in the two loops below */
-		{ SHF_EXECINSTR | SHF_ALLOC, ARCH_SHF_SMALL },
-		{ SHF_ALLOC, SHF_WRITE | ARCH_SHF_SMALL },
-		{ SHF_WRITE | SHF_ALLOC, ARCH_SHF_SMALL },
-		{ ARCH_SHF_SMALL | SHF_ALLOC, 0 }
+		{ SHF_EXECINSTR|SHF_ALLOC,  ARCH_SHF_SMALL },
+		{ SHF_ALLOC,                SHF_WRITE|ARCH_SHF_SMALL },
+		{ SHF_WRITE|SHF_ALLOC,      ARCH_SHF_SMALL },
+		{ ARCH_SHF_SMALL|SHF_ALLOC, 0 }
 	};
 	unsigned int m, i;
 
@@ -1566,12 +1600,13 @@ static void layout_sections(struct module *mod,
 			if ((s->sh_flags & masks[m][0]) != masks[m][0]
 			    || (s->sh_flags & masks[m][1])
 			    || s->sh_entsize != ~0UL
-			    || strncmp(secstrings + s->sh_name,
-				       ".init", 5) == 0)
+			    || strncmp(secstrings + s->sh_name, ".init", 5) == 0)
 				continue;
+
 			s->sh_entsize = get_offset(&mod->core_size, s);
 			DEBUGP("\t%s\n", secstrings + s->sh_name);
 		}
+
 		if (m == 0)
 			mod->core_text_size = mod->core_size;
 	}
@@ -1584,13 +1619,13 @@ static void layout_sections(struct module *mod,
 			if ((s->sh_flags & masks[m][0]) != masks[m][0]
 			    || (s->sh_flags & masks[m][1])
 			    || s->sh_entsize != ~0UL
-			    || strncmp(secstrings + s->sh_name,
-				       ".init", 5) != 0)
+			    || strncmp(secstrings + s->sh_name, ".init", 5) != 0)
 				continue;
-			s->sh_entsize = (get_offset(&mod->init_size, s)
-					 | INIT_OFFSET_MASK);
+
+			s->sh_entsize = (get_offset(&mod->init_size, s)|INIT_OFFSET_MASK);
 			DEBUGP("\t%s\n", secstrings + s->sh_name);
 		}
+
 		if (m == 0)
 			mod->init_text_size = mod->init_size;
 	}
@@ -1628,9 +1663,8 @@ static char *next_string(char *string, unsigned long *secsize)
 	return string;
 }
 
-static char *get_modinfo(Elf_Shdr *sechdrs,
-			 unsigned int info,
-			 const char *tag)
+static char *
+get_modinfo(Elf_Shdr *sechdrs, unsigned int info, const char *tag)
 {
 	char *p;
 	unsigned int taglen = strlen(tag);
@@ -1643,18 +1677,15 @@ static char *get_modinfo(Elf_Shdr *sechdrs,
 	return NULL;
 }
 
-static void setup_modinfo(struct module *mod, Elf_Shdr *sechdrs,
-			  unsigned int infoindex)
+static void
+setup_modinfo(struct module *mod, Elf_Shdr *sechdrs, unsigned int infoindex)
 {
 	struct module_attribute *attr;
 	int i;
 
 	for (i = 0; (attr = modinfo_attrs[i]); i++) {
 		if (attr->setup)
-			attr->setup(mod,
-				    get_modinfo(sechdrs,
-						infoindex,
-						attr->attr.name));
+			attr->setup(mod, get_modinfo(sechdrs, infoindex, attr->attr.name));
 	}
 }
 
@@ -1671,10 +1702,9 @@ static int is_exported(const char *name, const struct module *mod)
 }
 
 /* As per nm */
-static char elf_type(const Elf_Sym *sym,
-		     Elf_Shdr *sechdrs,
-		     const char *secstrings,
-		     struct module *mod)
+static char
+elf_type(const Elf_Sym *sym, Elf_Shdr *sechdrs, const char *secstrings,
+		 struct module *mod)
 {
 	if (ELF_ST_BIND(sym->st_info) == STB_WEAK) {
 		if (ELF_ST_TYPE(sym->st_info) == STT_OBJECT)
@@ -1711,11 +1741,9 @@ static char elf_type(const Elf_Sym *sym,
 	return '?';
 }
 
-static void add_kallsyms(struct module *mod,
-			 Elf_Shdr *sechdrs,
-			 unsigned int symindex,
-			 unsigned int strindex,
-			 const char *secstrings)
+static void
+add_kallsyms(struct module *mod, Elf_Shdr *sechdrs, unsigned int symindex,
+			 unsigned int strindex, const char *secstrings)
 {
 	unsigned int i;
 
@@ -1729,20 +1757,17 @@ static void add_kallsyms(struct module *mod,
 			= elf_type(&mod->symtab[i], sechdrs, secstrings, mod);
 }
 #else
-static inline void add_kallsyms(struct module *mod,
-				Elf_Shdr *sechdrs,
-				unsigned int symindex,
-				unsigned int strindex,
-				const char *secstrings)
+static inline void
+add_kallsyms(struct module *mod, Elf_Shdr *sechdrs, unsigned int symindex,
+			 unsigned int strindex, const char *secstrings)
 {
 }
 #endif /* CONFIG_KALLSYMS */
 
 /* Allocate and load the module: note that size of section 0 is always
    zero, and we rely on this for optional sections. */
-static struct module *load_module(void __user *umod,
-				  unsigned long len,
-				  const char __user *uargs)
+static struct module *
+load_module(void __user *umod, unsigned long len, const char __user *uargs)
 {
 	Elf_Ehdr *hdr;
 	Elf_Shdr *sechdrs;
@@ -1778,6 +1803,7 @@ static struct module *load_module(void __user *umod,
 
 	DEBUGP("load_module: umod=%p, len=%lu, uargs=%p\n",
 	       umod, len, uargs);
+
 	if (len < sizeof(*hdr))
 		return ERR_PTR(-ENOEXEC);
 
@@ -1795,7 +1821,8 @@ static struct module *load_module(void __user *umod,
 	if (memcmp(hdr->e_ident, ELFMAG, SELFMAG) != 0
 	    || hdr->e_type != ET_REL
 	    || !elf_check_arch(hdr)
-	    || hdr->e_shentsize != sizeof(*sechdrs)) {
+	    || hdr->e_shentsize != sizeof(*sechdrs))
+	{
 		err = -ENOEXEC;
 		goto free_hdr;
 	}
@@ -1804,7 +1831,8 @@ static struct module *load_module(void __user *umod,
 		goto truncated;
 
 	/* Convenience variables */
-	sechdrs = (void *)hdr + hdr->e_shoff;
+	sechdrs = (void *)hdr + hdr->e_shoff; // sections头部表指针
+	// sections名称表指针
 	secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
 	sechdrs[0].sh_addr = 0;
 
@@ -1815,14 +1843,16 @@ static struct module *load_module(void __user *umod,
 
 		/* Mark all sections sh_addr with their address in the
 		   temporary image. */
+		// 修改sections头部表对应的section真正的虚拟地址
 		sechdrs[i].sh_addr = (size_t)hdr + sechdrs[i].sh_offset;
 
 		/* Internal symbols and strings. */
-		if (sechdrs[i].sh_type == SHT_SYMTAB) {
+		if (sechdrs[i].sh_type == SHT_SYMTAB) { // 如果当前section头部的类型是符号表
 			symindex = i;
 			strindex = sechdrs[i].sh_link;
 			strtab = (char *)hdr + sechdrs[strindex].sh_offset;
 		}
+
 #ifndef CONFIG_MODULE_UNLOAD
 		/* Don't load .exit sections */
 		if (strncmp(secstrings+sechdrs[i].sh_name, ".exit", 5) == 0)
@@ -1830,18 +1860,18 @@ static struct module *load_module(void __user *umod,
 #endif
 	}
 
-	modindex = find_sec(hdr, sechdrs, secstrings,
-			    ".gnu.linkonce.this_module");
+	modindex = find_sec(hdr, sechdrs, secstrings, ".gnu.linkonce.this_module");
 	if (!modindex) {
 		printk(KERN_WARNING "No module found in object\n");
 		err = -ENOEXEC;
 		goto free_hdr;
 	}
+
 	mod = (void *)sechdrs[modindex].sh_addr;
 
 	if (symindex == 0) {
 		printk(KERN_WARNING "%s: module has no symbols (stripped?)\n",
-		       mod->name);
+			   mod->name);
 		err = -ENOEXEC;
 		goto free_hdr;
 	}
@@ -1875,6 +1905,7 @@ static struct module *load_module(void __user *umod,
 	sechdrs[symindex].sh_flags |= SHF_ALLOC;
 	sechdrs[strindex].sh_flags |= SHF_ALLOC;
 #endif
+
 	if (unwindex)
 		sechdrs[unwindex].sh_flags |= SHF_ALLOC;
 
@@ -1919,12 +1950,12 @@ static struct module *load_module(void __user *umod,
 	if (pcpuindex) {
 		/* We have a special allocation for this section. */
 		percpu = percpu_modalloc(sechdrs[pcpuindex].sh_size,
-					 sechdrs[pcpuindex].sh_addralign,
-					 mod->name);
+								 sechdrs[pcpuindex].sh_addralign, mod->name);
 		if (!percpu) {
 			err = -ENOMEM;
 			goto free_mod;
 		}
+
 		sechdrs[pcpuindex].sh_flags &= ~(unsigned long)SHF_ALLOC;
 		mod->percpu = percpu;
 	}
@@ -1935,19 +1966,21 @@ static struct module *load_module(void __user *umod,
 	layout_sections(mod, hdr, sechdrs, secstrings);
 
 	/* Do the allocs. */
-	ptr = module_alloc(mod->core_size);
+	ptr = module_alloc(mod->core_size); // 申请一块内存块来保存core段的代码
 	if (!ptr) {
 		err = -ENOMEM;
 		goto free_percpu;
 	}
+
 	memset(ptr, 0, mod->core_size);
 	mod->module_core = ptr;
 
-	ptr = module_alloc(mod->init_size);
+	ptr = module_alloc(mod->init_size); // 申请一块内存块来保存init段的代码
 	if (!ptr && mod->init_size) {
 		err = -ENOMEM;
 		goto free_core;
 	}
+
 	memset(ptr, 0, mod->init_size);
 	mod->module_init = ptr;
 
@@ -1960,20 +1993,21 @@ static struct module *load_module(void __user *umod,
 			continue;
 
 		if (sechdrs[i].sh_entsize & INIT_OFFSET_MASK)
-			dest = mod->module_init
-				+ (sechdrs[i].sh_entsize & ~INIT_OFFSET_MASK);
+			dest = mod->module_init + (sechdrs[i].sh_entsize & ~INIT_OFFSET_MASK);
 		else
 			dest = mod->module_core + sechdrs[i].sh_entsize;
 
+		// 把core或init的代码拷贝到新的内存空间
 		if (sechdrs[i].sh_type != SHT_NOBITS)
-			memcpy(dest, (void *)sechdrs[i].sh_addr,
-			       sechdrs[i].sh_size);
+			memcpy(dest, (void *)sechdrs[i].sh_addr, sechdrs[i].sh_size);
+
 		/* Update sh_addr to point to copy in image. */
-		sechdrs[i].sh_addr = (unsigned long)dest;
+		sechdrs[i].sh_addr = (unsigned long)dest; // 重新设置段的内存地址
 		DEBUGP("\t0x%lx %s\n", sechdrs[i].sh_addr, secstrings + sechdrs[i].sh_name);
 	}
+
 	/* Module has been moved. */
-	mod = (void *)sechdrs[modindex].sh_addr;
+	mod = (void *)sechdrs[modindex].sh_addr; // 重新设置module指针(因为module对象已经移动到新的位置)
 
 	/* Now we've moved module, initialize linked lists, etc. */
 	module_unload_init(mod);
@@ -2002,26 +2036,31 @@ static struct module *load_module(void __user *umod,
 	setup_modinfo(mod, sechdrs, infoindex);
 
 	/* Fix up syms, so that st_value is a pointer to location. */
-	err = simplify_symbols(sechdrs, symindex, strtab, versindex, pcpuindex,
-			       mod);
+	// 修正未决的符号地址
+	err = simplify_symbols(sechdrs, symindex, strtab, versindex, pcpuindex, mod);
 	if (err < 0)
 		goto cleanup;
 
 	/* Set up EXPORTed & EXPORT_GPLed symbols (section 0 is 0 length) */
 	mod->num_syms = sechdrs[exportindex].sh_size / sizeof(*mod->syms);
-	mod->syms = (void *)sechdrs[exportindex].sh_addr;
+	mod->syms = (void *)sechdrs[exportindex].sh_addr; // 设置导出符号表地址
+
 	if (crcindex)
 		mod->crcs = (void *)sechdrs[crcindex].sh_addr;
+
 	mod->num_gpl_syms = sechdrs[gplindex].sh_size / sizeof(*mod->gpl_syms);
 	mod->gpl_syms = (void *)sechdrs[gplindex].sh_addr;
+
 	if (gplcrcindex)
 		mod->gpl_crcs = (void *)sechdrs[gplcrcindex].sh_addr;
-	mod->num_gpl_future_syms = sechdrs[gplfutureindex].sh_size /
-					sizeof(*mod->gpl_future_syms);
-	mod->num_unused_syms = sechdrs[unusedindex].sh_size /
-					sizeof(*mod->unused_syms);
-	mod->num_unused_gpl_syms = sechdrs[unusedgplindex].sh_size /
-					sizeof(*mod->unused_gpl_syms);
+
+	mod->num_gpl_future_syms =
+			sechdrs[gplfutureindex].sh_size / sizeof(*mod->gpl_future_syms);
+	mod->num_unused_syms =
+			sechdrs[unusedindex].sh_size / sizeof(*mod->unused_syms);
+	mod->num_unused_gpl_syms =
+			sechdrs[unusedgplindex].sh_size / sizeof(*mod->unused_gpl_syms);
+
 	mod->gpl_future_syms = (void *)sechdrs[gplfutureindex].sh_addr;
 	if (gplfuturecrcindex)
 		mod->gpl_future_crcs = (void *)sechdrs[gplfuturecrcindex].sh_addr;
@@ -2029,26 +2068,27 @@ static struct module *load_module(void __user *umod,
 	mod->unused_syms = (void *)sechdrs[unusedindex].sh_addr;
 	if (unusedcrcindex)
 		mod->unused_crcs = (void *)sechdrs[unusedcrcindex].sh_addr;
+
 	mod->unused_gpl_syms = (void *)sechdrs[unusedgplindex].sh_addr;
 	if (unusedgplcrcindex)
-		mod->unused_gpl_crcs
-			= (void *)sechdrs[unusedgplcrcindex].sh_addr;
+		mod->unused_gpl_crcs = (void *)sechdrs[unusedgplcrcindex].sh_addr;
 
 #ifdef CONFIG_MODVERSIONS
-	if ((mod->num_syms && !crcindex) ||
-	    (mod->num_gpl_syms && !gplcrcindex) ||
-	    (mod->num_gpl_future_syms && !gplfuturecrcindex) ||
-	    (mod->num_unused_syms && !unusedcrcindex) ||
-	    (mod->num_unused_gpl_syms && !unusedgplcrcindex)) {
+	if ((mod->num_syms && !crcindex)
+	    || (mod->num_gpl_syms && !gplcrcindex)
+	    || (mod->num_gpl_future_syms && !gplfuturecrcindex)
+	    || (mod->num_unused_syms && !unusedcrcindex)
+	    || (mod->num_unused_gpl_syms && !unusedgplcrcindex))
+	{
 		printk(KERN_WARNING "%s: No versions for exported symbols.\n", mod->name);
 		err = try_to_force_load(mod, "nocrc");
 		if (err)
 			goto cleanup;
 	}
 #endif
+
 	markersindex = find_sec(hdr, sechdrs, secstrings, "__markers");
- 	markersstringsindex = find_sec(hdr, sechdrs, secstrings,
-					"__markers_strings");
+ 	markersstringsindex = find_sec(hdr, sechdrs, secstrings, "__markers_strings");
 
 	/* Now do relocations. */
 	for (i = 1; i < hdr->e_shnum; i++) {
@@ -2063,23 +2103,23 @@ static struct module *load_module(void __user *umod,
 		if (!(sechdrs[info].sh_flags & SHF_ALLOC))
 			continue;
 
-		if (sechdrs[i].sh_type == SHT_REL)
-			err = apply_relocate(sechdrs, strtab, symindex, i,mod);
-		else if (sechdrs[i].sh_type == SHT_RELA)
-			err = apply_relocate_add(sechdrs, strtab, symindex, i,
-						 mod);
+		if (sechdrs[i].sh_type == SHT_REL) {
+			err = apply_relocate(sechdrs, strtab, symindex, i, mod);
+		} else if (sechdrs[i].sh_type == SHT_RELA) {
+			err = apply_relocate_add(sechdrs, strtab, symindex, i, mod);
+		}
+
 		if (err < 0)
 			goto cleanup;
 	}
+
 #ifdef CONFIG_MARKERS
 	mod->markers = (void *)sechdrs[markersindex].sh_addr;
-	mod->num_markers =
-		sechdrs[markersindex].sh_size / sizeof(*mod->markers);
+	mod->num_markers = sechdrs[markersindex].sh_size / sizeof(*mod->markers);
 #endif
 
         /* Find duplicate symbols */
 	err = verify_export_symbols(mod);
-
 	if (err < 0)
 		goto cleanup;
 
@@ -2090,14 +2130,13 @@ static struct module *load_module(void __user *umod,
 
 	/* Finally, copy percpu area over. */
 	percpu_modcopy(mod->percpu, (void *)sechdrs[pcpuindex].sh_addr,
-		       sechdrs[pcpuindex].sh_size);
+				   sechdrs[pcpuindex].sh_size);
 
 	add_kallsyms(mod, sechdrs, symindex, strindex, secstrings);
 
 #ifdef CONFIG_MARKERS
 	if (!mod->taints)
-		marker_update_probe_range(mod->markers,
-			mod->markers + mod->num_markers);
+		marker_update_probe_range(mod->markers, mod->markers + mod->num_markers);
 #endif
 	err = module_finalize(hdr, sechdrs, mod);
 	if (err < 0)
@@ -2114,17 +2153,16 @@ static struct module *load_module(void __user *umod,
 	 */
 	if (mod->module_init)
 		flush_icache_range((unsigned long)mod->module_init,
-				   (unsigned long)mod->module_init
-				   + mod->init_size);
+						   (unsigned long)mod->module_init + mod->init_size);
+
 	flush_icache_range((unsigned long)mod->module_core,
-			   (unsigned long)mod->module_core + mod->core_size);
+					   (unsigned long)mod->module_core + mod->core_size);
 
 	set_fs(old_fs);
 
 	mod->args = args;
 	if (obsparmindex)
-		printk(KERN_WARNING "%s: Ignoring obsolete parameters\n",
-		       mod->name);
+		printk(KERN_WARNING "%s: Ignoring obsolete parameters\n", mod->name);
 
 	/* Now sew it into the lists so we can get lockdep and oops
          * info during argument parsing.  Noone should access us, since
@@ -2135,8 +2173,7 @@ static struct module *load_module(void __user *umod,
 	err = parse_args(mod->name, mod->args,
 			 (struct kernel_param *)
 			 sechdrs[setupindex].sh_addr,
-			 sechdrs[setupindex].sh_size
-			 / sizeof(struct kernel_param),
+			 sechdrs[setupindex].sh_size / sizeof(struct kernel_param),
 			 NULL);
 	if (err < 0)
 		goto unlink;
@@ -2144,17 +2181,16 @@ static struct module *load_module(void __user *umod,
 	err = mod_sysfs_setup(mod,
 			      (struct kernel_param *)
 			      sechdrs[setupindex].sh_addr,
-			      sechdrs[setupindex].sh_size
-			      / sizeof(struct kernel_param));
+			      sechdrs[setupindex].sh_size / sizeof(struct kernel_param));
 	if (err < 0)
 		goto unlink;
+
 	add_sect_attrs(mod, hdr->e_shnum, secstrings, sechdrs);
 	add_notes_attrs(mod, hdr->e_shnum, secstrings, sechdrs);
 
 	/* Size of section 0 is 0, so this works well if no unwind info. */
-	mod->unwind_info = unwind_add_table(mod,
-					    (void *)sechdrs[unwindex].sh_addr,
-					    sechdrs[unwindex].sh_size);
+	mod->unwind_info = unwind_add_table(mod, (void *)sechdrs[unwindex].sh_addr,
+										sechdrs[unwindex].sh_size);
 
 	/* Get rid of temporary copy */
 	vfree(hdr);
@@ -2190,9 +2226,7 @@ static struct module *load_module(void __user *umod,
 
 /* This is where the real work happens */
 asmlinkage long
-sys_init_module(void __user *umod,
-		unsigned long len,
-		const char __user *uargs)
+sys_init_module(void __user *umod, unsigned long len, const char __user *uargs)
 {
 	struct module *mod;
 	int ret = 0;

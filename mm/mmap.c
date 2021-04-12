@@ -33,16 +33,16 @@
 #include <asm/mmu_context.h>
 
 #ifndef arch_mmap_check
-#define arch_mmap_check(addr, len, flags)	(0)
+#define arch_mmap_check(addr, len, flags) (0)
 #endif
 
 #ifndef arch_rebalance_pgtables
-#define arch_rebalance_pgtables(addr, len)		(addr)
+#define arch_rebalance_pgtables(addr, len) (addr)
 #endif
 
-static void unmap_region(struct mm_struct *mm,
-		struct vm_area_struct *vma, struct vm_area_struct *prev,
-		unsigned long start, unsigned long end);
+static void unmap_region(struct mm_struct *mm, struct vm_area_struct *vma,
+						 struct vm_area_struct *prev, unsigned long start,
+						 unsigned long end);
 
 /*
  * WARNING: the debugging will use recursive algorithms so never enable this
@@ -949,7 +949,7 @@ do_mmap_pgoff(struct file *file,   // 映射的文件
 
 	/* offset overflow? */
 	if ((pgoff + (len >> PAGE_SHIFT)) < pgoff)
-               return -EOVERFLOW;
+		return -EOVERFLOW;
 
 	/* Too many mappings? */
 	if (mm->map_count > sysctl_max_map_count)
@@ -986,8 +986,10 @@ do_mmap_pgoff(struct file *file,   // 映射的文件
 
 		locked = len >> PAGE_SHIFT;
 		locked += mm->locked_vm;
+
 		lock_limit = current->signal->rlim[RLIMIT_MEMLOCK].rlim_cur;
 		lock_limit >>= PAGE_SHIFT;
+
 		if (locked > lock_limit && !capable(CAP_IPC_LOCK))
 			return -EAGAIN;
 	}
@@ -1039,6 +1041,7 @@ do_mmap_pgoff(struct file *file,   // 映射的文件
 		default:
 			return -EINVAL;
 		}
+
 	} else {
 		switch (flags & MAP_TYPE) {
 		case MAP_SHARED:
@@ -1457,9 +1460,8 @@ void arch_unmap_area_topdown(struct mm_struct *mm, unsigned long addr)
 }
 
 unsigned long
-get_unmapped_area(struct file *file, unsigned long addr,
-				  unsigned long len, unsigned long pgoff,
-				  unsigned long flags)
+get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
+				  unsigned long pgoff, unsigned long flags)
 {
 	unsigned long (*get_area)(struct file *, unsigned long,
 							  unsigned long, unsigned long, unsigned long);

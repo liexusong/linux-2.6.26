@@ -46,16 +46,15 @@ static void put_prev_task_idle(struct rq *rq, struct task_struct *prev)
 #ifdef CONFIG_SMP
 static unsigned long
 load_balance_idle(struct rq *this_rq, int this_cpu, struct rq *busiest,
-		  unsigned long max_load_move,
-		  struct sched_domain *sd, enum cpu_idle_type idle,
-		  int *all_pinned, int *this_best_prio)
+				  unsigned long max_load_move, struct sched_domain *sd,
+				  enum cpu_idle_type idle, int *all_pinned, int *this_best_prio)
 {
 	return 0;
 }
 
 static int
 move_one_task_idle(struct rq *this_rq, int this_cpu, struct rq *busiest,
-		   struct sched_domain *sd, enum cpu_idle_type idle)
+				   struct sched_domain *sd, enum cpu_idle_type idle)
 {
 	return 0;
 }
@@ -79,8 +78,9 @@ static void switched_to_idle(struct rq *rq, struct task_struct *p,
 		check_preempt_curr(rq, p);
 }
 
-static void prio_changed_idle(struct rq *rq, struct task_struct *p,
-			      int oldprio, int running)
+static void
+prio_changed_idle(struct rq *rq, struct task_struct *p, int oldprio,
+				  int running)
 {
 	/* This can happen for hot plug CPUS */
 
@@ -110,7 +110,6 @@ static const struct sched_class idle_sched_class = {
 #endif /* CONFIG_SMP */
 
 	.check_preempt_curr	= check_preempt_curr_idle,
-
 	.pick_next_task		= pick_next_task_idle,
 	.put_prev_task		= put_prev_task_idle,
 
@@ -121,7 +120,6 @@ static const struct sched_class idle_sched_class = {
 
 	.set_curr_task		= set_curr_task_idle,
 	.task_tick			= task_tick_idle,
-
 	.prio_changed		= prio_changed_idle,
 	.switched_to		= switched_to_idle,
 

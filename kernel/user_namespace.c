@@ -16,7 +16,8 @@
  * @old_ns: namespace to clone
  * Return NULL on error (failure to kmalloc), new ns otherwise
  */
-static struct user_namespace *clone_user_ns(struct user_namespace *old_ns)
+static struct user_namespace *
+clone_user_ns(struct user_namespace *old_ns)
 {
 	struct user_namespace *ns;
 	struct user_struct *new_user;
@@ -50,7 +51,8 @@ static struct user_namespace *clone_user_ns(struct user_namespace *old_ns)
 	return ns;
 }
 
-struct user_namespace * copy_user_ns(int flags, struct user_namespace *old_ns)
+struct user_namespace *
+copy_user_ns(int flags, struct user_namespace *old_ns)
 {
 	struct user_namespace *new_ns;
 
@@ -66,7 +68,8 @@ struct user_namespace * copy_user_ns(int flags, struct user_namespace *old_ns)
 	return new_ns;
 }
 
-void free_user_ns(struct kref *kref)
+void
+free_user_ns(struct kref *kref)
 {
 	struct user_namespace *ns;
 

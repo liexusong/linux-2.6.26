@@ -117,7 +117,7 @@ extern struct module __this_module;
  * is a GPL combined work.
  *
  * This exists for several reasons
- * 1.	So modinfo can show license info for users wanting to vet their setup 
+ * 1.	So modinfo can show license info for users wanting to vet their setup
  *	is free
  * 2.	So the community can ignore bug reports including proprietary modules
  * 3.	So vendors can do likewise based on their own policies
@@ -126,7 +126,7 @@ extern struct module __this_module;
 
 /* Author, ideally of form NAME[, NAME]*[ and NAME] */
 #define MODULE_AUTHOR(_author) MODULE_INFO(author, _author)
-  
+
 /* What your module does. */
 #define MODULE_DESCRIPTION(_description) MODULE_INFO(description, _description)
 
@@ -248,8 +248,8 @@ struct module
 	struct kobject *holders_dir;
 
 	/* Exported symbols */
-	const struct kernel_symbol *syms;
-	unsigned int num_syms;
+	const struct kernel_symbol *syms; // 导出符号表
+	unsigned int num_syms;            // 导出符号表元素个数
 	const unsigned long *crcs;
 
 	/* GPL-only exported symbols. */
@@ -261,6 +261,7 @@ struct module
 	const struct kernel_symbol *unused_syms;
 	unsigned int num_unused_syms;
 	const unsigned long *unused_crcs;
+
 	/* GPL-only, unused exported symbols. */
 	const struct kernel_symbol *unused_gpl_syms;
 	unsigned int num_unused_gpl_syms;
@@ -432,13 +433,11 @@ static inline void __module_get(struct module *module)
 /* For kallsyms to ask for address resolution.  namebuf should be at
  * least KSYM_NAME_LEN long: a pointer to namebuf is returned if
  * found, otherwise NULL. */
-const char *module_address_lookup(unsigned long addr,
-			    unsigned long *symbolsize,
-			    unsigned long *offset,
-			    char **modname,
-			    char *namebuf);
+const char *module_address_lookup(unsigned long addr, unsigned long *symbolsize,
+								  unsigned long *offset, char **modname, char *namebuf);
 int lookup_module_symbol_name(unsigned long addr, char *symname);
-int lookup_module_symbol_attrs(unsigned long addr, unsigned long *size, unsigned long *offset, char *modname, char *name);
+int lookup_module_symbol_attrs(unsigned long addr, unsigned long *size,
+							   unsigned long *offset, char *modname, char *name);
 
 /* For extable.c to search modules' exception tables. */
 const struct exception_table_entry *search_module_extables(unsigned long addr);
@@ -516,14 +515,16 @@ static inline int lookup_module_symbol_name(unsigned long addr, char *symname)
 	return -ERANGE;
 }
 
-static inline int lookup_module_symbol_attrs(unsigned long addr, unsigned long *size, unsigned long *offset, char *modname, char *name)
+static inline int
+lookup_module_symbol_attrs(unsigned long addr, unsigned long *size,
+						   unsigned long *offset, char *modname, char *name)
 {
 	return -ERANGE;
 }
 
-static inline int module_get_kallsym(unsigned int symnum, unsigned long *value,
-					char *type, char *name,
-					char *module_name, int *exported)
+static inline int
+module_get_kallsym(unsigned int symnum, unsigned long *value, char *type,
+				   char *name, char *module_name, int *exported)
 {
 	return -ERANGE;
 }
