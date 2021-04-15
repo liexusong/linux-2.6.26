@@ -51,17 +51,17 @@ struct execute_work {
  * here is required, otherwise it could get initialised to the
  * copy of the lockdep_map!
  */
-#define __WORK_INIT_LOCKDEP_MAP(n, k) \
+#define __WORK_INIT_LOCKDEP_MAP(n, k)				\
 	.lockdep_map = STATIC_LOCKDEP_MAP_INIT(n, k),
 #else
 #define __WORK_INIT_LOCKDEP_MAP(n, k)
 #endif
 
-#define __WORK_INITIALIZER(n, f) {				\
-	.data = WORK_DATA_INIT(),				\
+#define __WORK_INITIALIZER(n, f) {					\
+	.data = WORK_DATA_INIT(),						\
 	.entry	= { &(n).entry, &(n).entry },			\
-	.func = (f),						\
-	__WORK_INIT_LOCKDEP_MAP(#n, &(n))			\
+	.func = (f),									\
+	__WORK_INIT_LOCKDEP_MAP(#n, &(n))				\
 	}
 
 #define __DELAYED_WORK_INITIALIZER(n, f) {			\
@@ -69,18 +69,18 @@ struct execute_work {
 	.timer = TIMER_INITIALIZER(NULL, 0, 0),			\
 	}
 
-#define DECLARE_WORK(n, f)					\
+#define DECLARE_WORK(n, f)							\
 	struct work_struct n = __WORK_INITIALIZER(n, f)
 
-#define DECLARE_DELAYED_WORK(n, f)				\
+#define DECLARE_DELAYED_WORK(n, f)					\
 	struct delayed_work n = __DELAYED_WORK_INITIALIZER(n, f)
 
 /*
  * initialize a work item's function pointer
  */
-#define PREPARE_WORK(_work, _func)				\
-	do {							\
-		(_work)->func = (_func);			\
+#define PREPARE_WORK(_work, _func)					\
+	do {											\
+		(_work)->func = (_func);					\
 	} while (0)
 
 #define PREPARE_DELAYED_WORK(_work, _func)			\
@@ -94,34 +94,34 @@ struct execute_work {
  * to generate better code.
  */
 #ifdef CONFIG_LOCKDEP
-#define INIT_WORK(_work, _func)						\
-	do {								\
-		static struct lock_class_key __key;			\
-									\
+#define INIT_WORK(_work, _func)								\
+	do {													\
+		static struct lock_class_key __key;					\
+															\
 		(_work)->data = (atomic_long_t) WORK_DATA_INIT();	\
 		lockdep_init_map(&(_work)->lockdep_map, #_work, &__key, 0);\
-		INIT_LIST_HEAD(&(_work)->entry);			\
-		PREPARE_WORK((_work), (_func));				\
+		INIT_LIST_HEAD(&(_work)->entry);					\
+		PREPARE_WORK((_work), (_func));						\
 	} while (0)
 #else
-#define INIT_WORK(_work, _func)						\
-	do {								\
+#define INIT_WORK(_work, _func)								\
+	do {													\
 		(_work)->data = (atomic_long_t) WORK_DATA_INIT();	\
-		INIT_LIST_HEAD(&(_work)->entry);			\
-		PREPARE_WORK((_work), (_func));				\
+		INIT_LIST_HEAD(&(_work)->entry);					\
+		PREPARE_WORK((_work), (_func));						\
 	} while (0)
 #endif
 
-#define INIT_DELAYED_WORK(_work, _func)				\
-	do {							\
-		INIT_WORK(&(_work)->work, (_func));		\
-		init_timer(&(_work)->timer);			\
+#define INIT_DELAYED_WORK(_work, _func)						\
+	do {													\
+		INIT_WORK(&(_work)->work, (_func));					\
+		init_timer(&(_work)->timer);						\
 	} while (0)
 
 #define INIT_DELAYED_WORK_DEFERRABLE(_work, _func)			\
-	do {							\
-		INIT_WORK(&(_work)->work, (_func));		\
-		init_timer_deferrable(&(_work)->timer);		\
+	do {													\
+		INIT_WORK(&(_work)->work, (_func));					\
+		init_timer_deferrable(&(_work)->timer);				\
 	} while (0)
 
 /**
@@ -154,27 +154,27 @@ __create_workqueue_key(const char *name, int singlethread,
 
 #ifdef CONFIG_LOCKDEP
 #define __create_workqueue(name, singlethread, freezeable)	\
-({								\
-	static struct lock_class_key __key;			\
-	const char *__lock_name;				\
-								\
-	if (__builtin_constant_p(name))				\
-		__lock_name = (name);				\
-	else							\
-		__lock_name = #name;				\
-								\
-	__create_workqueue_key((name), (singlethread),		\
-			       (freezeable), &__key,		\
-			       __lock_name);			\
+({															\
+	static struct lock_class_key __key;						\
+	const char *__lock_name;								\
+															\
+	if (__builtin_constant_p(name))							\
+		__lock_name = (name);								\
+	else													\
+		__lock_name = #name;								\
+															\
+	__create_workqueue_key((name), (singlethread),			\
+			       (freezeable), &__key,					\
+			       __lock_name);							\
 })
 #else
 #define __create_workqueue(name, singlethread, freezeable)	\
 	__create_workqueue_key((name), (singlethread), (freezeable), NULL, NULL)
 #endif
 
-#define create_workqueue(name) __create_workqueue((name), 0, 0)
-#define create_freezeable_workqueue(name) __create_workqueue((name), 1, 1)
-#define create_singlethread_workqueue(name) __create_workqueue((name), 1, 0)
+#define create_workqueue(name)				__create_workqueue((name), 0, 0)
+#define create_freezeable_workqueue(name)	__create_workqueue((name), 1, 1)
+#define create_singlethread_workqueue(name)	__create_workqueue((name), 1, 0)
 
 extern void destroy_workqueue(struct workqueue_struct *wq);
 
@@ -219,9 +219,9 @@ static inline int cancel_delayed_work(struct delayed_work *work)
 extern int cancel_delayed_work_sync(struct delayed_work *work);
 
 /* Obsolete. use cancel_delayed_work_sync() */
-static inline
-void cancel_rearming_delayed_workqueue(struct workqueue_struct *wq,
-					struct delayed_work *work)
+static inline void
+cancel_rearming_delayed_workqueue(struct workqueue_struct *wq,
+								  struct delayed_work *work)
 {
 	cancel_delayed_work_sync(work);
 }

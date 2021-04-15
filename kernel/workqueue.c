@@ -39,7 +39,6 @@
  * possible cpu).
  */
 struct cpu_workqueue_struct {
-
 	spinlock_t lock;
 
 	struct list_head worklist;
@@ -106,8 +105,8 @@ struct cpu_workqueue_struct *wq_per_cpu(struct workqueue_struct *wq, int cpu)
  * Set the workqueue on which a work item is to be run
  * - Must *only* be called if the pending flag is set
  */
-static inline void set_wq_data(struct work_struct *work,
-				struct cpu_workqueue_struct *cwq)
+static inline void
+set_wq_data(struct work_struct *work, struct cpu_workqueue_struct *cwq)
 {
 	unsigned long new;
 
@@ -118,14 +117,14 @@ static inline void set_wq_data(struct work_struct *work,
 	atomic_long_set(&work->data, new);
 }
 
-static inline
-struct cpu_workqueue_struct *get_wq_data(struct work_struct *work)
+static inline struct cpu_workqueue_struct *
+get_wq_data(struct work_struct *work)
 {
 	return (void *) (atomic_long_read(&work->data) & WORK_STRUCT_WQ_DATA_MASK);
 }
 
 static void insert_work(struct cpu_workqueue_struct *cwq,
-				struct work_struct *work, int tail)
+						struct work_struct *work, int tail)
 {
 	set_wq_data(work, cwq);
 	/*
@@ -133,16 +132,18 @@ static void insert_work(struct cpu_workqueue_struct *cwq,
 	 * result of list_add() below, see try_to_grab_pending().
 	 */
 	smp_wmb();
+
 	if (tail)
 		list_add_tail(&work->entry, &cwq->worklist);
 	else
 		list_add(&work->entry, &cwq->worklist);
+
 	wake_up(&cwq->more_work);
 }
 
 /* Preempt must be disabled. */
-static void __queue_work(struct cpu_workqueue_struct *cwq,
-			 struct work_struct *work)
+static void
+__queue_work(struct cpu_workqueue_struct *cwq, struct work_struct *work)
 {
 	unsigned long flags;
 
@@ -171,6 +172,7 @@ int queue_work(struct workqueue_struct *wq, struct work_struct *work)
 		put_cpu();
 		ret = 1;
 	}
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(queue_work);
@@ -192,8 +194,8 @@ static void delayed_work_timer_fn(unsigned long __data)
  *
  * Returns 0 if @work was already on a queue, non-zero otherwise.
  */
-int queue_delayed_work(struct workqueue_struct *wq,
-			struct delayed_work *dwork, unsigned long delay)
+int queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *dwork,
+					   unsigned long delay)
 {
 	if (delay == 0)
 		return queue_work(wq, &dwork->work);
@@ -212,7 +214,7 @@ EXPORT_SYMBOL_GPL(queue_delayed_work);
  * Returns 0 if @work was already on a queue, non-zero otherwise.
  */
 int queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
-			struct delayed_work *dwork, unsigned long delay)
+						  struct delayed_work *dwork, unsigned long delay)
 {
 	int ret = 0;
 	struct timer_list *timer = &dwork->timer;
@@ -244,15 +246,16 @@ static void run_workqueue(struct cpu_workqueue_struct *cwq)
 {
 	spin_lock_irq(&cwq->lock);
 	cwq->run_depth++;
+
 	if (cwq->run_depth > 3) {
 		/* morton gets to eat his hat */
-		printk("%s: recursion depth exceeded: %d\n",
-			__func__, cwq->run_depth);
+		printk("%s: recursion depth exceeded: %d\n", __func__, cwq->run_depth);
 		dump_stack();
 	}
+
 	while (!list_empty(&cwq->worklist)) {
 		struct work_struct *work = list_entry(cwq->worklist.next,
-						struct work_struct, entry);
+											  struct work_struct, entry);
 		work_func_t f = work->func;
 #ifdef CONFIG_LOCKDEP
 		/*
@@ -272,17 +275,18 @@ static void run_workqueue(struct cpu_workqueue_struct *cwq)
 
 		BUG_ON(get_wq_data(work) != cwq);
 		work_clear_pending(work);
+
 		lock_acquire(&cwq->wq->lockdep_map, 0, 0, 0, 2, _THIS_IP_);
 		lock_acquire(&lockdep_map, 0, 0, 0, 2, _THIS_IP_);
+
 		f(work);
+
 		lock_release(&lockdep_map, 1, _THIS_IP_);
 		lock_release(&cwq->wq->lockdep_map, 1, _THIS_IP_);
 
 		if (unlikely(in_atomic() || lockdep_depth(current) > 0)) {
-			printk(KERN_ERR "BUG: workqueue leaked lock or atomic: "
-					"%s/0x%08x/%d\n",
-					current->comm, preempt_count(),
-				       	task_pid_nr(current));
+			printk(KERN_ERR "BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n",
+				   current->comm, preempt_count(), task_pid_nr(current));
 			printk(KERN_ERR "    last function: ");
 			print_symbol("%s\n", (unsigned long)f);
 			debug_show_held_locks(current);
@@ -292,6 +296,7 @@ static void run_workqueue(struct cpu_workqueue_struct *cwq)
 		spin_lock_irq(&cwq->lock);
 		cwq->current_work = NULL;
 	}
+
 	cwq->run_depth--;
 	spin_unlock_irq(&cwq->lock);
 }
@@ -308,10 +313,12 @@ static int worker_thread(void *__cwq)
 
 	for (;;) {
 		prepare_to_wait(&cwq->more_work, &wait, TASK_INTERRUPTIBLE);
-		if (!freezing(current) &&
-		    !kthread_should_stop() &&
-		    list_empty(&cwq->worklist))
+
+		if (!freezing(current)
+			&& !kthread_should_stop()
+			&& list_empty(&cwq->worklist))
 			schedule();
+
 		finish_wait(&cwq->more_work, &wait);
 
 		try_to_freeze();
@@ -337,7 +344,7 @@ static void wq_barrier_func(struct work_struct *work)
 }
 
 static void insert_wq_barrier(struct cpu_workqueue_struct *cwq,
-					struct wq_barrier *barr, int tail)
+							  struct wq_barrier *barr, int tail)
 {
 	INIT_WORK(&barr->work, wq_barrier_func);
 	__set_bit(WORK_STRUCT_PENDING, work_data_bits(&barr->work));
@@ -577,8 +584,8 @@ EXPORT_SYMBOL(schedule_delayed_work);
  * After waiting for a given time this puts a job in the kernel-global
  * workqueue on the specified CPU.
  */
-int schedule_delayed_work_on(int cpu,
-			struct delayed_work *dwork, unsigned long delay)
+int schedule_delayed_work_on(int cpu, struct delayed_work *dwork,
+							 unsigned long delay)
 {
 	return queue_delayed_work_on(cpu, keventd_wq, dwork, delay);
 }
@@ -716,11 +723,9 @@ static void start_workqueue_thread(struct cpu_workqueue_struct *cwq, int cpu)
 	}
 }
 
-struct workqueue_struct *__create_workqueue_key(const char *name,
-						int singlethread,
-						int freezeable,
-						struct lock_class_key *key,
-						const char *lock_name)
+struct workqueue_struct *
+__create_workqueue_key(const char *name, int singlethread, int freezeable,
+					   struct lock_class_key *key, const char *lock_name)
 {
 	struct workqueue_struct *wq;
 	struct cpu_workqueue_struct *cwq;
@@ -766,6 +771,7 @@ struct workqueue_struct *__create_workqueue_key(const char *name,
 		destroy_workqueue(wq);
 		wq = NULL;
 	}
+
 	return wq;
 }
 EXPORT_SYMBOL_GPL(__create_workqueue_key);
@@ -823,8 +829,7 @@ void destroy_workqueue(struct workqueue_struct *wq)
 EXPORT_SYMBOL_GPL(destroy_workqueue);
 
 static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
-						unsigned long action,
-						void *hcpu)
+											unsigned long action, void *hcpu)
 {
 	unsigned int cpu = (unsigned long)hcpu;
 	struct cpu_workqueue_struct *cwq;

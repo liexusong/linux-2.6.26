@@ -2091,6 +2091,7 @@ load_module(void __user *umod, unsigned long len, const char __user *uargs)
  	markersstringsindex = find_sec(hdr, sechdrs, secstrings, "__markers_strings");
 
 	/* Now do relocations. */
+	// 修正需要重定位的代码或数据的内存地址
 	for (i = 1; i < hdr->e_shnum; i++) {
 		const char *strtab = (char *)sechdrs[strindex].sh_addr;
 		unsigned int info = sechdrs[i].sh_info;

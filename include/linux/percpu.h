@@ -50,9 +50,9 @@
  * Must be an lvalue. Since @var must be a simple identifier,
  * we force a syntax error here if it isn't.
  */
-#define get_cpu_var(var) (*({				\
+#define get_cpu_var(var) (*({					\
 	extern int simple_identifier_##var(void);	\
-	preempt_disable();				\
+	preempt_disable();							\
 	&__get_cpu_var(var); }))
 #define put_cpu_var(var) preempt_enable()
 
@@ -63,15 +63,15 @@ struct percpu_data {
 };
 
 #define __percpu_disguise(pdata) (struct percpu_data *)~(unsigned long)(pdata)
-/* 
+/*
  * Use this to get to a cpu's version of the per-cpu object dynamically
  * allocated. Non-atomic access to the current CPU's version should
  * probably be combined with get_cpu()/put_cpu().
- */ 
-#define percpu_ptr(ptr, cpu)                              \
-({                                                        \
-        struct percpu_data *__p = __percpu_disguise(ptr); \
-        (__typeof__(ptr))__p->ptrs[(cpu)];	          \
+ */
+#define percpu_ptr(ptr, cpu)								\
+({															\
+        struct percpu_data *__p = __percpu_disguise(ptr);	\
+        (__typeof__(ptr))__p->ptrs[(cpu)];					\
 })
 
 extern void *percpu_populate(void *__pdata, size_t size, gfp_t gfp, int cpu);
@@ -100,13 +100,14 @@ static inline void *percpu_populate(void *__pdata, size_t size, gfp_t gfp,
 	return percpu_ptr(__pdata, cpu);
 }
 
-static inline int __percpu_populate_mask(void *__pdata, size_t size, gfp_t gfp,
-					 cpumask_t *mask)
+static inline int
+__percpu_populate_mask(void *__pdata, size_t size, gfp_t gfp, cpumask_t *mask)
 {
 	return 0;
 }
 
-static __always_inline void *__percpu_alloc_mask(size_t size, gfp_t gfp, cpumask_t *mask)
+static __always_inline void *
+__percpu_alloc_mask(size_t size, gfp_t gfp, cpumask_t *mask)
 {
 	return kzalloc(size, gfp);
 }
@@ -129,10 +130,9 @@ static inline void percpu_free(void *__pdata)
 
 /* (legacy) interface for use without CPU hotplug handling */
 
-#define __alloc_percpu(size)	percpu_alloc_mask((size), GFP_KERNEL, \
-						  cpu_possible_map)
-#define alloc_percpu(type)	(type *)__alloc_percpu(sizeof(type))
-#define free_percpu(ptr)	percpu_free((ptr))
+#define __alloc_percpu(size)	percpu_alloc_mask((size), GFP_KERNEL, cpu_possible_map)
+#define alloc_percpu(type)		(type *)__alloc_percpu(sizeof(type))
+#define free_percpu(ptr)		percpu_free((ptr))
 #define per_cpu_ptr(ptr, cpu)	percpu_ptr((ptr), (cpu))
 
 #endif /* __LINUX_PERCPU_H */

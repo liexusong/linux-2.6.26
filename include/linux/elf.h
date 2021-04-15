@@ -157,7 +157,7 @@ typedef struct elf32_rel
 
 typedef struct elf64_rel
 {
-  Elf64_Addr  r_offset;    /* Location at which to apply the action */
+  Elf64_Addr  r_offset;  /* Location at which to apply the action */
   Elf64_Xword r_info;    /* index and type of relocation */
 } Elf64_Rel;
 
