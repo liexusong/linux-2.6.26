@@ -207,7 +207,7 @@ static unsigned long *in_exception_stack(unsigned cpu, unsigned long stack,
 #define MSG(txt) ops->warning(data, txt)
 
 /*
- * x86-64 can have up to three kernel stacks: 
+ * x86-64 can have up to three kernel stacks:
  * process stack
  * interrupt stack
  * severe exception (double fault, nmi, stack fault, debug, mce) hardware stack
@@ -503,7 +503,7 @@ void show_registers(struct pt_regs *regs)
 		}
 	}
 	printk("\n");
-}	
+}
 
 int is_valid_bugaddr(unsigned long ip)
 {
@@ -530,7 +530,7 @@ unsigned __kprobes long oops_begin(void)
 	raw_local_irq_save(flags);
 	cpu = smp_processor_id();
 	if (!__raw_spin_trylock(&die_lock)) {
-		if (cpu == die_owner) 
+		if (cpu == die_owner)
 			/* nested oops. should stop eventually */;
 		else
 			__raw_spin_lock(&die_lock);
@@ -543,7 +543,7 @@ unsigned __kprobes long oops_begin(void)
 }
 
 void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
-{ 
+{
 	die_owner = -1;
 	bust_spinlocks(0);
 	die_nest_count--;
@@ -627,8 +627,8 @@ die_nmi(char *str, struct pt_regs *regs, int do_panic)
 }
 
 static void __kprobes do_trap(int trapnr, int signr, char *str,
-			      struct pt_regs * regs, long error_code,
-			      siginfo_t *info)
+							  struct pt_regs * regs, long error_code,
+							  siginfo_t *info)
 {
 	struct task_struct *tsk = current;
 
@@ -760,7 +760,7 @@ asmlinkage void __kprobes do_general_protection(struct pt_regs * regs,
 
 		force_sig(SIGSEGV, tsk);
 		return;
-	} 
+	}
 
 	if (fixup_exception(regs))
 		return;
@@ -855,7 +855,7 @@ asmlinkage notrace  __kprobes void default_do_nmi(struct pt_regs *regs)
 		return;
 	}
 	if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
-		return; 
+		return;
 
 	/* AK: following checks seem to be broken on modern chipsets. FIXME */
 
@@ -925,7 +925,7 @@ asmlinkage void __kprobes do_debug(struct pt_regs * regs,
 
 	/* Mask out spurious debug traps due to lazy DR7 setting */
 	if (condition & (DR_TRAP0|DR_TRAP1|DR_TRAP2|DR_TRAP3)) {
-		if (!tsk->thread.debugreg7) { 
+		if (!tsk->thread.debugreg7) {
 			goto clear_dr7;
 		}
 	}
@@ -1045,7 +1045,7 @@ asmlinkage void do_coprocessor_error(struct pt_regs *regs)
 
 asmlinkage void bad_intr(void)
 {
-	printk("bad interrupt"); 
+	printk("bad interrupt");
 }
 
 asmlinkage void do_simd_coprocessor_error(struct pt_regs *regs)
@@ -1168,14 +1168,14 @@ void __init trap_init(void)
 	set_intr_gate(16,&coprocessor_error);
 	set_intr_gate(17,&alignment_check);
 #ifdef CONFIG_X86_MCE
-	set_intr_gate_ist(18,&machine_check, MCE_STACK); 
+	set_intr_gate_ist(18,&machine_check, MCE_STACK);
 #endif
 	set_intr_gate(19,&simd_coprocessor_error);
 
 #ifdef CONFIG_IA32_EMULATION
 	set_system_gate(IA32_SYSCALL_VECTOR, ia32_syscall);
 #endif
-       
+
 	/*
 	 * initialize the per thread extended state:
 	 */
@@ -1188,13 +1188,13 @@ void __init trap_init(void)
 
 
 static int __init oops_setup(char *s)
-{ 
+{
 	if (!s)
 		return -EINVAL;
 	if (!strcmp(s, "panic"))
 		panic_on_oops = 1;
 	return 0;
-} 
+}
 early_param("oops", oops_setup);
 
 static int __init kstack_setup(char *s)

@@ -342,6 +342,7 @@ static void __kprobes fix_riprel(struct kprobe *p)
 
 static void __kprobes arch_copy_kprobe(struct kprobe *p)
 {
+	// 复制16个指令码
 	memcpy(p->ainsn.insn, p->addr, MAX_INSN_SIZE * sizeof(kprobe_opcode_t));
 
 	fix_riprel(p);
@@ -366,6 +367,7 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
 
 void __kprobes arch_arm_kprobe(struct kprobe *p)
 {
+	// 将要DEBUG的指令替换缓存int3
 	text_poke(p->addr, ((unsigned char []){BREAKPOINT_INSTRUCTION}), 1);
 }
 
@@ -398,11 +400,14 @@ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
 }
 
 static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
-				struct kprobe_ctlblk *kcb)
+										 struct kprobe_ctlblk *kcb)
 {
 	__get_cpu_var(current_kprobe) = p;
-	kcb->kprobe_saved_flags = kcb->kprobe_old_flags
+
+	kcb->kprobe_saved_flags
+		= kcb->kprobe_old_flags
 		= (regs->flags & (X86_EFLAGS_TF | X86_EFLAGS_IF));
+
 	if (is_IF_modifier(p->ainsn.insn))
 		kcb->kprobe_saved_flags &= ~X86_EFLAGS_IF;
 }
@@ -422,9 +427,12 @@ static void __kprobes restore_btf(void)
 static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
 {
 	clear_btf();
+
 	regs->flags |= X86_EFLAGS_TF;
 	regs->flags &= ~X86_EFLAGS_IF;
+
 	/* single step inline if the instruction is an int3 */
+	// 恢复原来的指令
 	if (p->opcode == BREAKPOINT_INSTRUCTION)
 		regs->ip = (unsigned long)p->addr;
 	else
@@ -433,7 +441,7 @@ static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
 
 /* Called with kretprobe_lock held */
 void __kprobes arch_prepare_kretprobe(struct kretprobe_instance *ri,
-				      struct pt_regs *regs)
+									  struct pt_regs *regs)
 {
 	unsigned long *sara = stack_addr(regs);
 
@@ -444,7 +452,7 @@ void __kprobes arch_prepare_kretprobe(struct kretprobe_instance *ri,
 }
 
 static void __kprobes setup_singlestep(struct kprobe *p, struct pt_regs *regs,
-				       struct kprobe_ctlblk *kcb)
+									   struct kprobe_ctlblk *kcb)
 {
 #if !defined(CONFIG_PREEMPT) || defined(CONFIG_PM)
 	if (p->ainsn.boostable == 1 && !p->post_handler) {
@@ -465,7 +473,7 @@ static void __kprobes setup_singlestep(struct kprobe *p, struct pt_regs *regs,
  * step on the instruction of the new probe without calling any user handlers.
  */
 static int __kprobes reenter_kprobe(struct kprobe *p, struct pt_regs *regs,
-				    struct kprobe_ctlblk *kcb)
+									struct kprobe_ctlblk *kcb)
 {
 	switch (kcb->kprobe_status) {
 	case KPROBE_HIT_SSDONE:
@@ -546,7 +554,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
 	p = get_kprobe(addr);
 
 	if (p) {
-		if (kprobe_running()) {
+		if (kprobe_running()) { // 如果当前在kprobe执行的上下文中, 处理重入操作
 			if (reenter_kprobe(p, regs, kcb))
 				return 1;
 		} else {
@@ -563,10 +571,13 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
 			 */
 			if (!p->pre_handler || !p->pre_handler(p, regs))
 				setup_singlestep(p, regs, kcb);
+
 			return 1;
 		}
+
 	} else if (kprobe_running()) {
 		p = __get_cpu_var(current_kprobe);
+
 		if (p->break_handler && p->break_handler(p, regs)) {
 			setup_singlestep(p, regs, kcb);
 			return 1;
@@ -768,8 +779,8 @@ static __used __kprobes void *trampoline_handler(struct pt_regs *regs)
  * jump instruction after the copied instruction, that jumps to the next
  * instruction after the probepoint.
  */
-static void __kprobes resume_execution(struct kprobe *p,
-		struct pt_regs *regs, struct kprobe_ctlblk *kcb)
+static void __kprobes resume_execution(struct kprobe *p, struct pt_regs *regs,
+									   struct kprobe_ctlblk *kcb)
 {
 	unsigned long *tos = stack_addr(regs);
 	unsigned long copy_ip = (unsigned long)p->ainsn.insn;
@@ -781,6 +792,7 @@ static void __kprobes resume_execution(struct kprobe *p,
 		insn++;
 
 	regs->flags &= ~X86_EFLAGS_TF;
+
 	switch (*insn) {
 	case 0x9c:	/* pushfl */
 		*tos &= ~(X86_EFLAGS_TF | X86_EFLAGS_IF);
@@ -812,8 +824,8 @@ static void __kprobes resume_execution(struct kprobe *p,
 			 */
 			*tos = orig_ip + (*tos - copy_ip);
 			goto no_change;
-		} else if (((insn[1] & 0x31) == 0x20) ||
-			   ((insn[1] & 0x31) == 0x21)) {
+
+		} else if (((insn[1] & 0x31) == 0x20) || ((insn[1] & 0x31) == 0x21)) {
 			/*
 			 * jmp near and far, absolute indirect
 			 * ip is correct. And this is boostable
@@ -821,6 +833,7 @@ static void __kprobes resume_execution(struct kprobe *p,
 			p->ainsn.boostable = 1;
 			goto no_change;
 		}
+
 	default:
 		break;
 	}
@@ -832,8 +845,7 @@ static void __kprobes resume_execution(struct kprobe *p,
 			 * These instructions can be executed directly if it
 			 * jumps back to correct address.
 			 */
-			set_jmp_op((void *)regs->ip,
-				   (void *)orig_ip + (regs->ip - copy_ip));
+			set_jmp_op((void *)regs->ip, (void *)orig_ip+(regs->ip - copy_ip));
 			p->ainsn.boostable = 1;
 		} else {
 			p->ainsn.boostable = -1;
@@ -872,6 +884,7 @@ static int __kprobes post_kprobe_handler(struct pt_regs *regs)
 		restore_previous_kprobe(kcb);
 		goto out;
 	}
+
 	reset_current_kprobe();
 out:
 	preempt_enable_no_resched();
@@ -951,7 +964,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
  * Wrapper routine for handling exceptions.
  */
 int __kprobes kprobe_exceptions_notify(struct notifier_block *self,
-				       unsigned long val, void *data)
+									   unsigned long val, void *data)
 {
 	struct die_args *args = data;
 	int ret = NOTIFY_DONE;
@@ -964,23 +977,28 @@ int __kprobes kprobe_exceptions_notify(struct notifier_block *self,
 		if (kprobe_handler(args->regs))
 			ret = NOTIFY_STOP;
 		break;
+
 	case DIE_DEBUG:
 		if (post_kprobe_handler(args->regs))
 			ret = NOTIFY_STOP;
 		break;
+
 	case DIE_GPF:
 		/*
 		 * To be potentially processing a kprobe fault and to
 		 * trust the result from kprobe_running(), we have
 		 * be non-preemptible.
 		 */
-		if (!preemptible() && kprobe_running() &&
-		    kprobe_fault_handler(args->regs, args->trapnr))
+		if (!preemptible()
+			&& kprobe_running()
+		    && kprobe_fault_handler(args->regs, args->trapnr))
 			ret = NOTIFY_STOP;
 		break;
+
 	default:
 		break;
 	}
+
 	return ret;
 }
 

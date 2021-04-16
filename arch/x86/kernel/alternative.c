@@ -522,19 +522,27 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
 		WARN_ON(!PageReserved(pages[0]));
 		pages[1] = virt_to_page(addr + PAGE_SIZE);
 	}
+
 	BUG_ON(!pages[0]);
-	if (!pages[1])
-		nr_pages = 1;
+
+	if (!pages[1]) nr_pages = 1;
+
 	vaddr = vmap(pages, nr_pages, VM_MAP, PAGE_KERNEL);
+
 	BUG_ON(!vaddr);
+
 	local_irq_save(flags);
 	memcpy(&vaddr[(unsigned long)addr & ~PAGE_MASK], opcode, len);
 	local_irq_restore(flags);
+
 	vunmap(vaddr);
+
 	sync_core();
+
 	/* Could also do a CLFLUSH here to speed up CPU recovery; but
 	   that causes hangs on some VIA CPUs. */
 	for (i = 0; i < len; i++)
 		BUG_ON(((char *)addr)[i] != ((char *)opcode)[i]);
+
 	return addr;
 }

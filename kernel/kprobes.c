@@ -164,6 +164,7 @@ kprobe_opcode_t __kprobes *get_insn_slot(void)
 	if (kprobe_garbage_slots && collect_garbage_slots() == 0) {
 		goto retry;
 	}
+
 	/* All out of space.  Need to allocate a new page. Use slot 0. */
 	kip = kmalloc(sizeof(struct kprobe_insn_page), GFP_KERNEL);
 	if (!kip)
@@ -179,12 +180,15 @@ kprobe_opcode_t __kprobes *get_insn_slot(void)
 		kfree(kip);
 		return NULL;
 	}
+
 	INIT_HLIST_NODE(&kip->hlist);
 	hlist_add_head(&kip->hlist, &kprobe_insn_pages);
+
 	memset(kip->slot_used, SLOT_CLEAN, INSNS_PER_PAGE);
 	kip->slot_used[0] = SLOT_USED;
 	kip->nused = 1;
 	kip->ngarbage = 0;
+
 	return kip->insns;
 }
 
@@ -286,10 +290,12 @@ struct kprobe __kprobes *get_kprobe(void *addr)
 	struct kprobe *p;
 
 	head = &kprobe_table[hash_ptr(addr, KPROBE_HASH_BITS)];
+
 	hlist_for_each_entry_rcu(p, node, head, hlist) {
 		if (p->addr == addr)
 			return p;
 	}
+
 	return NULL;
 }
 
@@ -313,7 +319,7 @@ static int __kprobes aggr_pre_handler(struct kprobe *p, struct pt_regs *regs)
 }
 
 static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
-					unsigned long flags)
+										unsigned long flags)
 {
 	struct kprobe *kp;
 
@@ -327,7 +333,7 @@ static void __kprobes aggr_post_handler(struct kprobe *p, struct pt_regs *regs,
 }
 
 static int __kprobes aggr_fault_handler(struct kprobe *p, struct pt_regs *regs,
-					int trapnr)
+										int trapnr)
 {
 	struct kprobe *cur = __get_cpu_var(kprobe_instance);
 
@@ -359,18 +365,20 @@ static int __kprobes aggr_break_handler(struct kprobe *p, struct pt_regs *regs)
 void __kprobes kprobes_inc_nmissed_count(struct kprobe *p)
 {
 	struct kprobe *kp;
+
 	if (p->pre_handler != aggr_pre_handler) {
 		p->nmissed++;
 	} else {
 		list_for_each_entry_rcu(kp, &p->list, list)
 			kp->nmissed++;
 	}
+
 	return;
 }
 
 /* Called with kretprobe_lock held */
 void __kprobes recycle_rp_inst(struct kretprobe_instance *ri,
-				struct hlist_head *head)
+							   struct hlist_head *head)
 {
 	/* remove rp inst off the rprobe_inst_table */
 	hlist_del(&ri->hlist);
@@ -462,12 +470,16 @@ static int __kprobes add_new_kprobe(struct kprobe *old_p, struct kprobe *p)
 	if (p->break_handler) {
 		if (old_p->break_handler)
 			return -EEXIST;
+
 		list_add_tail_rcu(&p->list, &old_p->list);
 		old_p->break_handler = aggr_break_handler;
+
 	} else
 		list_add_rcu(&p->list, &old_p->list);
+
 	if (p->post_handler && !old_p->post_handler)
 		old_p->post_handler = aggr_post_handler;
+
 	return 0;
 }
 
@@ -479,9 +491,11 @@ static inline void add_aggr_kprobe(struct kprobe *ap, struct kprobe *p)
 {
 	copy_kprobe(p, ap);
 	flush_insn_slot(ap);
+
 	ap->addr = p->addr;
 	ap->pre_handler = aggr_pre_handler;
 	ap->fault_handler = aggr_fault_handler;
+
 	if (p->post_handler)
 		ap->post_handler = aggr_post_handler;
 	if (p->break_handler)
@@ -498,7 +512,7 @@ static inline void add_aggr_kprobe(struct kprobe *ap, struct kprobe *p)
  * the intricacies
  */
 static int __kprobes register_aggr_kprobe(struct kprobe *old_p,
-					  struct kprobe *p)
+										  struct kprobe *p)
 {
 	int ret = 0;
 	struct kprobe *ap;
@@ -510,10 +524,12 @@ static int __kprobes register_aggr_kprobe(struct kprobe *old_p,
 		ap = kzalloc(sizeof(struct kprobe), GFP_KERNEL);
 		if (!ap)
 			return -ENOMEM;
+
 		add_aggr_kprobe(ap, old_p);
 		copy_kprobe(ap, p);
 		ret = add_new_kprobe(ap, p);
 	}
+
 	return ret;
 }
 
@@ -521,9 +537,10 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
 {
 	struct kprobe_blackpoint *kb;
 
-	if (addr >= (unsigned long)__kprobes_text_start &&
-	    addr < (unsigned long)__kprobes_text_end)
+	if (addr >= (unsigned long)__kprobes_text_start
+	    && addr < (unsigned long)__kprobes_text_end)
 		return -EINVAL;
+
 	/*
 	 * If there exists a kprobe_blacklist, verify and
 	 * fail any probe registration in the prohibited area
@@ -535,6 +552,7 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
 				return -EINVAL;
 		}
 	}
+
 	return 0;
 }
 
@@ -545,32 +563,34 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
 static kprobe_opcode_t __kprobes *kprobe_addr(struct kprobe *p)
 {
 	kprobe_opcode_t *addr = p->addr;
+
 	if (p->symbol_name) {
 		if (addr)
 			return NULL;
 		kprobe_lookup_name(p->symbol_name, addr);
 	}
 
-	if (!addr)
-		return NULL;
+	if (!addr) return NULL;
+
 	return (kprobe_opcode_t *)(((char *)addr) + p->offset);
 }
 
 static int __kprobes __register_kprobe(struct kprobe *p,
-	unsigned long called_from)
+									   unsigned long called_from)
 {
 	int ret = 0;
 	struct kprobe *old_p;
 	struct module *probed_mod;
 	kprobe_opcode_t *addr;
 
-	addr = kprobe_addr(p);
+	addr = kprobe_addr(p); // 获取要DEBUG的地址
 	if (!addr)
 		return -EINVAL;
-	p->addr = addr;
 
-	if (!kernel_text_address((unsigned long) p->addr) ||
-	    in_kprobes_functions((unsigned long) p->addr))
+	p->addr = addr;  // 把地址保存到addr字段中
+
+	if (!kernel_text_address((unsigned long) p->addr)
+	    || in_kprobes_functions((unsigned long) p->addr))
 		return -EINVAL;
 
 	p->mod_refcounted = 0;
@@ -578,7 +598,7 @@ static int __kprobes __register_kprobe(struct kprobe *p,
 	/*
 	 * Check if are we probing a module.
 	 */
-	probed_mod = module_text_address((unsigned long) p->addr);
+	probed_mod = module_text_address((unsigned long)p->addr); // DEBUG的地址是否是模块的
 	if (probed_mod) {
 		struct module *calling_mod = module_text_address(called_from);
 		/*
@@ -596,29 +616,33 @@ static int __kprobes __register_kprobe(struct kprobe *p,
 
 	p->nmissed = 0;
 	INIT_LIST_HEAD(&p->list);
+
 	mutex_lock(&kprobe_mutex);
+
 	old_p = get_kprobe(p->addr);
 	if (old_p) {
 		ret = register_aggr_kprobe(old_p, p);
 		goto out;
 	}
 
-	ret = arch_prepare_kprobe(p);
+	ret = arch_prepare_kprobe(p); // 保存DEBUG的内存地址处的指令
 	if (ret)
 		goto out;
 
+	// 将kprobe对象添加到kprobe哈希表中
 	INIT_HLIST_NODE(&p->hlist);
 	hlist_add_head_rcu(&p->hlist,
-		       &kprobe_table[hash_ptr(p->addr, KPROBE_HASH_BITS)]);
+					   &kprobe_table[hash_ptr(p->addr, KPROBE_HASH_BITS)]);
 
 	if (kprobe_enabled)
-		arch_arm_kprobe(p);
+		arch_arm_kprobe(p); // 将要DEBUG的内存地址处的指令设置为int3(DEBUG指令)
 
 out:
 	mutex_unlock(&kprobe_mutex);
 
 	if (ret && probed_mod)
 		module_put(probed_mod);
+
 	return ret;
 }
 
@@ -690,18 +714,20 @@ static void __kprobes __unregister_kprobe_bottom(struct kprobe *p)
 	}
 }
 
-static int __register_kprobes(struct kprobe **kps, int num,
-	unsigned long called_from)
+static int
+__register_kprobes(struct kprobe **kps, int num, unsigned long called_from)
 {
 	int i, ret = 0;
 
 	if (num <= 0)
 		return -EINVAL;
+
 	for (i = 0; i < num; i++) {
 		ret = __register_kprobe(kps[i], called_from);
 		if (ret < 0) {
 			if (i > 0)
 				unregister_kprobes(kps, i);
+
 			break;
 		}
 	}
@@ -713,8 +739,7 @@ static int __register_kprobes(struct kprobe **kps, int num,
  */
 int __kprobes register_kprobe(struct kprobe *p)
 {
-	return __register_kprobes(&p, 1,
-				  (unsigned long)__builtin_return_address(0));
+	return __register_kprobes(&p, 1, (unsigned long)__builtin_return_address(0));
 }
 
 void __kprobes unregister_kprobe(struct kprobe *p)
@@ -724,8 +749,7 @@ void __kprobes unregister_kprobe(struct kprobe *p)
 
 int __kprobes register_kprobes(struct kprobe **kps, int num)
 {
-	return __register_kprobes(kps, num,
-				  (unsigned long)__builtin_return_address(0));
+	return __register_kprobes(kps, num, (unsigned long)__builtin_return_address(0));
 }
 
 void __kprobes unregister_kprobes(struct kprobe **kps, int num)
@@ -788,8 +812,7 @@ static int __register_jprobes(struct jprobe **jps, int num,
 
 int __kprobes register_jprobe(struct jprobe *jp)
 {
-	return __register_jprobes(&jp, 1,
-		(unsigned long)__builtin_return_address(0));
+	return __register_jprobes(&jp, 1, (unsigned long)__builtin_return_address(0));
 }
 
 void __kprobes unregister_jprobe(struct jprobe *jp)
@@ -799,8 +822,7 @@ void __kprobes unregister_jprobe(struct jprobe *jp)
 
 int __kprobes register_jprobes(struct jprobe **jps, int num)
 {
-	return __register_jprobes(jps, num,
-		(unsigned long)__builtin_return_address(0));
+	return __register_jprobes(jps, num, (unsigned long)__builtin_return_address(0));
 }
 
 void __kprobes unregister_jprobes(struct jprobe **jps, int num)
@@ -827,8 +849,8 @@ void __kprobes unregister_jprobes(struct jprobe **jps, int num)
  * This kprobe pre_handler is registered with every kretprobe. When probe
  * hits it will set up the return probe.
  */
-static int __kprobes pre_handler_kretprobe(struct kprobe *p,
-					   struct pt_regs *regs)
+static int __kprobes
+pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
 {
 	struct kretprobe *rp = container_of(p, struct kretprobe, kp);
 	unsigned long flags = 0;
@@ -861,7 +883,7 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
 }
 
 static int __kprobes __register_kretprobe(struct kretprobe *rp,
-					  unsigned long called_from)
+										  unsigned long called_from)
 {
 	int ret = 0;
 	struct kretprobe_instance *inst;
@@ -987,8 +1009,8 @@ void __kprobes unregister_kretprobes(struct kretprobe **rps, int num)
 {
 }
 
-static int __kprobes pre_handler_kretprobe(struct kprobe *p,
-					   struct pt_regs *regs)
+static int __kprobes
+pre_handler_kretprobe(struct kprobe *p, struct pt_regs *regs)
 {
 	return 0;
 }
@@ -1025,8 +1047,9 @@ static int __init init_kprobes(void)
 			continue;
 
 		kb->start_addr = (unsigned long)addr;
-		symbol_name = kallsyms_lookup(kb->start_addr,
-				&size, &offset, &modname, namebuf);
+
+		symbol_name = kallsyms_lookup(kb->start_addr, &size, &offset, &modname,
+									  namebuf);
 		if (!symbol_name)
 			kb->range = 0;
 		else
@@ -1036,11 +1059,9 @@ static int __init init_kprobes(void)
 	if (kretprobe_blacklist_size) {
 		/* lookup the function address from its name */
 		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-			kprobe_lookup_name(kretprobe_blacklist[i].name,
-					   kretprobe_blacklist[i].addr);
+			kprobe_lookup_name(kretprobe_blacklist[i].name, kretprobe_blacklist[i].addr);
 			if (!kretprobe_blacklist[i].addr)
-				printk("kretprobe: lookup failed: %s\n",
-				       kretprobe_blacklist[i].name);
+				printk("kretprobe: lookup failed: %s\n", kretprobe_blacklist[i].name);
 		}
 	}
 
@@ -1051,14 +1072,15 @@ static int __init init_kprobes(void)
 	if (!err)
 		err = register_die_notifier(&kprobe_exceptions_nb);
 
-	if (!err)
-		init_test_probes();
+	if (!err) init_test_probes();
+
 	return err;
 }
 
 #ifdef CONFIG_DEBUG_FS
-static void __kprobes report_probe(struct seq_file *pi, struct kprobe *p,
-		const char *sym, int offset,char *modname)
+static void __kprobes
+report_probe(struct seq_file *pi, struct kprobe *p, const char *sym, int offset,
+			 char *modname)
 {
 	char *kprobe_type;
 
@@ -1080,7 +1102,8 @@ static void __kprobes *kprobe_seq_start(struct seq_file *f, loff_t *pos)
 	return (*pos < KPROBE_TABLE_SIZE) ? pos : NULL;
 }
 
-static void __kprobes *kprobe_seq_next(struct seq_file *f, void *v, loff_t *pos)
+static void __kprobes *
+kprobe_seq_next(struct seq_file *f, void *v, loff_t *pos)
 {
 	(*pos)++;
 	if (*pos >= KPROBE_TABLE_SIZE)
@@ -1104,7 +1127,9 @@ static int __kprobes show_kprobe_addr(struct seq_file *pi, void *v)
 	char *modname, namebuf[128];
 
 	head = &kprobe_table[i];
+
 	preempt_disable();
+
 	hlist_for_each_entry_rcu(p, node, head, hlist) {
 		sym = kallsyms_lookup((unsigned long)p->addr, NULL,
 					&offset, &modname, namebuf);
@@ -1114,7 +1139,9 @@ static int __kprobes show_kprobe_addr(struct seq_file *pi, void *v)
 		} else
 			report_probe(pi, p, sym, offset, modname);
 	}
+
 	preempt_enable();
+
 	return 0;
 }
 
@@ -1131,10 +1158,10 @@ static int __kprobes kprobes_open(struct inode *inode, struct file *filp)
 }
 
 static struct file_operations debugfs_kprobes_operations = {
-	.open           = kprobes_open,
-	.read           = seq_read,
-	.llseek         = seq_lseek,
-	.release        = seq_release,
+	.open    = kprobes_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = seq_release,
 };
 
 static void __kprobes enable_all_kprobes(void)
@@ -1178,7 +1205,9 @@ static void __kprobes disable_all_kprobes(void)
 		goto already_disabled;
 
 	kprobe_enabled = false;
+
 	printk(KERN_INFO "Kprobes globally disabled\n");
+
 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
 		head = &kprobe_table[i];
 		hlist_for_each_entry_rcu(p, node, head, hlist) {
@@ -1202,8 +1231,9 @@ already_disabled:
  * when the bool state is switched. We can reuse that facility when
  * available
  */
-static ssize_t read_enabled_file_bool(struct file *file,
-	       char __user *user_buf, size_t count, loff_t *ppos)
+static ssize_t
+read_enabled_file_bool(struct file *file, char __user *user_buf, size_t count,
+					   loff_t *ppos)
 {
 	char buf[3];
 
@@ -1211,18 +1241,22 @@ static ssize_t read_enabled_file_bool(struct file *file,
 		buf[0] = '1';
 	else
 		buf[0] = '0';
+
 	buf[1] = '\n';
 	buf[2] = 0x00;
+
 	return simple_read_from_buffer(user_buf, count, ppos, buf, 2);
 }
 
-static ssize_t write_enabled_file_bool(struct file *file,
-	       const char __user *user_buf, size_t count, loff_t *ppos)
+static ssize_t
+write_enabled_file_bool(struct file *file, const char __user *user_buf,
+						size_t count, loff_t *ppos)
 {
 	char buf[32];
 	int buf_size;
 
 	buf_size = min(count, (sizeof(buf)-1));
+
 	if (copy_from_user(buf, user_buf, buf_size))
 		return -EFAULT;
 
@@ -1232,6 +1266,7 @@ static ssize_t write_enabled_file_bool(struct file *file,
 	case '1':
 		enable_all_kprobes();
 		break;
+
 	case 'n':
 	case 'N':
 	case '0':
@@ -1243,8 +1278,8 @@ static ssize_t write_enabled_file_bool(struct file *file,
 }
 
 static struct file_operations fops_kp = {
-	.read =         read_enabled_file_bool,
-	.write =        write_enabled_file_bool,
+	.read =  read_enabled_file_bool,
+	.write = write_enabled_file_bool,
 };
 
 static int __kprobes debugfs_kprobe_init(void)
@@ -1257,14 +1292,13 @@ static int __kprobes debugfs_kprobe_init(void)
 		return -ENOMEM;
 
 	file = debugfs_create_file("list", 0444, dir, NULL,
-				&debugfs_kprobes_operations);
+							   &debugfs_kprobes_operations);
 	if (!file) {
 		debugfs_remove(dir);
 		return -ENOMEM;
 	}
 
-	file = debugfs_create_file("enabled", 0600, dir,
-					&value, &fops_kp);
+	file = debugfs_create_file("enabled", 0600, dir, &value, &fops_kp);
 	if (!file) {
 		debugfs_remove(dir);
 		return -ENOMEM;

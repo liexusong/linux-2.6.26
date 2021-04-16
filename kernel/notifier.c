@@ -178,7 +178,7 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
 EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
 
 int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
-		unsigned long val, void *v)
+										 unsigned long val, void *v)
 {
 	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
 }
@@ -200,7 +200,7 @@ EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
  *	Currently always returns zero.
  */
 int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
-		struct notifier_block *n)
+									 struct notifier_block *n)
 {
 	int ret;
 
@@ -550,8 +550,8 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
 
 static ATOMIC_NOTIFIER_HEAD(die_chain);
 
-int notify_die(enum die_val val, const char *str,
-	       struct pt_regs *regs, long err, int trap, int sig)
+int notify_die(enum die_val val, const char *str, struct pt_regs *regs,
+			   long err, int trap, int sig)
 {
 	struct die_args args = {
 		.regs	= regs,
@@ -561,6 +561,7 @@ int notify_die(enum die_val val, const char *str,
 		.signr	= sig,
 
 	};
+
 	return atomic_notifier_call_chain(&die_chain, val, &args);
 }
 

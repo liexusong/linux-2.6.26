@@ -403,17 +403,20 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
 #endif
 	printk("\n");
 
-	if (notify_die(DIE_OOPS, str, regs, err,
-			current->thread.trap_no, SIGSEGV) != NOTIFY_STOP) {
+	if (notify_die(DIE_OOPS, str, regs, err, current->thread.trap_no, SIGSEGV)
+															   != NOTIFY_STOP)
+	{
 
 		show_registers(regs);
 		/* Executive summary in case the oops scrolled away */
 		sp = (unsigned long) (&regs->sp);
 		savesegment(ss, ss);
+
 		if (user_mode(regs)) {
 			sp = regs->sp;
 			ss = regs->ss & 0xffff;
 		}
+
 		printk(KERN_EMERG "EIP: [<%08lx>] ", regs->ip);
 		print_symbol("%s", regs->ip);
 		printk(" SS:ESP %04x:%08lx\n", ss, sp);
@@ -492,9 +495,9 @@ die_if_kernel(const char *str, struct pt_regs *regs, long err)
 		die(str, regs, err);
 }
 
-static void __kprobes
-do_trap(int trapnr, int signr, char *str, int vm86, struct pt_regs *regs,
-	long error_code, siginfo_t *info)
+static void __kprobes do_trap(int trapnr, int signr, char *str,
+							  int vm86, struct pt_regs *regs,
+							  long error_code, siginfo_t *info)
 {
 	struct task_struct *tsk = current;
 
@@ -524,6 +527,7 @@ trap_signal:
 		force_sig_info(signr, info, tsk);
 	else
 		force_sig(signr, tsk);
+
 	return;
 
 kernel_trap:
@@ -535,60 +539,60 @@ kernel_trap:
 	return;
 
 vm86_trap:
-	if (handle_vm86_trap((struct kernel_vm86_regs *) regs,
-						error_code, trapnr))
+	if (handle_vm86_trap((struct kernel_vm86_regs *)regs, error_code, trapnr))
 		goto trap_signal;
+
 	return;
 }
 
-#define DO_ERROR(trapnr, signr, str, name)				\
-void do_##name(struct pt_regs *regs, long error_code)			\
-{									\
-	trace_hardirqs_fixup();						\
-	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
-						== NOTIFY_STOP)		\
-		return;							\
-	do_trap(trapnr, signr, str, 0, regs, error_code, NULL);		\
+#define DO_ERROR(trapnr, signr, str, name)								\
+void do_##name(struct pt_regs *regs, long error_code)					\
+{																		\
+	trace_hardirqs_fixup();												\
+	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)		\
+						== NOTIFY_STOP)									\
+		return;															\
+	do_trap(trapnr, signr, str, 0, regs, error_code, NULL);				\
 }
 
 #define DO_ERROR_INFO(trapnr, signr, str, name, sicode, siaddr, irq)	\
-void do_##name(struct pt_regs *regs, long error_code)			\
-{									\
-	siginfo_t info;							\
-	if (irq)							\
-		local_irq_enable();					\
-	info.si_signo = signr;						\
-	info.si_errno = 0;						\
-	info.si_code = sicode;						\
-	info.si_addr = (void __user *)siaddr;				\
-	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
-						== NOTIFY_STOP)		\
-		return;							\
-	do_trap(trapnr, signr, str, 0, regs, error_code, &info);	\
+void do_##name(struct pt_regs *regs, long error_code)					\
+{																		\
+	siginfo_t info;														\
+	if (irq)															\
+		local_irq_enable();												\
+	info.si_signo = signr;												\
+	info.si_errno = 0;													\
+	info.si_code = sicode;												\
+	info.si_addr = (void __user *)siaddr;								\
+	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)		\
+						== NOTIFY_STOP)									\
+		return;															\
+	do_trap(trapnr, signr, str, 0, regs, error_code, &info);			\
 }
 
-#define DO_VM86_ERROR(trapnr, signr, str, name)				\
-void do_##name(struct pt_regs *regs, long error_code)			\
-{									\
-	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
-						== NOTIFY_STOP)		\
-		return;							\
-	do_trap(trapnr, signr, str, 1, regs, error_code, NULL);		\
+#define DO_VM86_ERROR(trapnr, signr, str, name)							\
+void do_##name(struct pt_regs *regs, long error_code)					\
+{																		\
+	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)		\
+						== NOTIFY_STOP)									\
+		return;															\
+	do_trap(trapnr, signr, str, 1, regs, error_code, NULL);				\
 }
 
 #define DO_VM86_ERROR_INFO(trapnr, signr, str, name, sicode, siaddr)	\
-void do_##name(struct pt_regs *regs, long error_code)			\
-{									\
-	siginfo_t info;							\
-	info.si_signo = signr;						\
-	info.si_errno = 0;						\
-	info.si_code = sicode;						\
-	info.si_addr = (void __user *)siaddr;				\
-	trace_hardirqs_fixup();						\
-	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)	\
-						== NOTIFY_STOP)		\
-		return;							\
-	do_trap(trapnr, signr, str, 1, regs, error_code, &info);	\
+void do_##name(struct pt_regs *regs, long error_code)					\
+{																		\
+	siginfo_t info;														\
+	info.si_signo = signr;												\
+	info.si_errno = 0;													\
+	info.si_code = sicode;												\
+	info.si_addr = (void __user *)siaddr;								\
+	trace_hardirqs_fixup();												\
+	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr)		\
+						== NOTIFY_STOP)									\
+		return;															\
+	do_trap(trapnr, signr, str, 1, regs, error_code, &info);			\
 }
 
 DO_VM86_ERROR_INFO(0, SIGFPE,  "divide error", divide_error, FPE_INTDIV, regs->ip)
@@ -862,8 +866,7 @@ void __kprobes do_int3(struct pt_regs *regs, long error_code)
 {
 	trace_hardirqs_fixup();
 
-	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
-			== NOTIFY_STOP)
+	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP) == NOTIFY_STOP)
 		return;
 	/*
 	 * This is an interrupt gate, because kprobes wants interrupts

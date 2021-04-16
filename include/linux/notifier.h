@@ -6,7 +6,7 @@
  *
  *				Alan Cox <Alan.Cox@linux.org>
  */
- 
+
 #ifndef _LINUX_NOTIFIER_H
 #define _LINUX_NOTIFIER_H
 #include <linux/errno.h>
@@ -74,41 +74,44 @@ struct srcu_notifier_head {
 };
 
 #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
-		spin_lock_init(&(name)->lock);	\
-		(name)->head = NULL;		\
+		spin_lock_init(&(name)->lock);			\
+		(name)->head = NULL;					\
 	} while (0)
+
 #define BLOCKING_INIT_NOTIFIER_HEAD(name) do {	\
-		init_rwsem(&(name)->rwsem);	\
-		(name)->head = NULL;		\
+		init_rwsem(&(name)->rwsem);				\
+		(name)->head = NULL;					\
 	} while (0)
-#define RAW_INIT_NOTIFIER_HEAD(name) do {	\
-		(name)->head = NULL;		\
+
+#define RAW_INIT_NOTIFIER_HEAD(name) do {		\
+		(name)->head = NULL;					\
 	} while (0)
 
 /* srcu_notifier_heads must be initialized and cleaned up dynamically */
 extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
-#define srcu_cleanup_notifier_head(name)	\
+#define srcu_cleanup_notifier_head(name)			\
 		cleanup_srcu_struct(&(name)->srcu);
 
 #define ATOMIC_NOTIFIER_INIT(name) {				\
 		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
 		.head = NULL }
+
 #define BLOCKING_NOTIFIER_INIT(name) {				\
 		.rwsem = __RWSEM_INITIALIZER((name).rwsem),	\
 		.head = NULL }
-#define RAW_NOTIFIER_INIT(name)	{				\
+
+#define RAW_NOTIFIER_INIT(name)	{					\
 		.head = NULL }
 /* srcu_notifier_heads cannot be initialized statically */
 
 #define ATOMIC_NOTIFIER_HEAD(name)				\
-	struct atomic_notifier_head name =			\
-		ATOMIC_NOTIFIER_INIT(name)
-#define BLOCKING_NOTIFIER_HEAD(name)				\
-	struct blocking_notifier_head name =			\
-		BLOCKING_NOTIFIER_INIT(name)
+	struct atomic_notifier_head name = ATOMIC_NOTIFIER_INIT(name)
+
+#define BLOCKING_NOTIFIER_HEAD(name)			\
+	struct blocking_notifier_head name = BLOCKING_NOTIFIER_INIT(name)
+
 #define RAW_NOTIFIER_HEAD(name)					\
-	struct raw_notifier_head name =				\
-		RAW_NOTIFIER_INIT(name)
+	struct raw_notifier_head name = RAW_NOTIFIER_INIT(name)
 
 #ifdef __KERNEL__
 
@@ -176,12 +179,12 @@ static inline int notifier_to_errno(int ret)
 
 /*
  *	Declared notifiers so far. I can imagine quite a few more chains
- *	over time (eg laptop power reset chains, reboot chain (to clean 
+ *	over time (eg laptop power reset chains, reboot chain (to clean
  *	device units up), device [un]mount chain, module load/unload chain,
- *	low memory chain, screenblank chain (for plug in modular screenblankers) 
+ *	low memory chain, screenblank chain (for plug in modular screenblankers)
  *	VC switch chains (for loadable kernel svgalib VC switch helpers) etc...
  */
- 
+
 /* netdevice notifier chain */
 #define NETDEV_UP	0x0001	/* For now you can't veto a device up/down */
 #define NETDEV_DOWN	0x0002
