@@ -17,9 +17,9 @@
 #include <asm/tlbflush.h>
 #include <asm/pgalloc.h>
 
-static unsigned long page_table_shareable(struct vm_area_struct *svma,
-				struct vm_area_struct *vma,
-				unsigned long addr, pgoff_t idx)
+static unsigned long
+page_table_shareable(struct vm_area_struct *svma, struct vm_area_struct *vma,
+					 unsigned long addr, pgoff_t idx)
 {
 	unsigned long saddr = ((idx - svma->vm_pgoff) << PAGE_SHIFT) +
 				svma->vm_start;
@@ -38,7 +38,8 @@ static unsigned long page_table_shareable(struct vm_area_struct *svma,
 	return saddr;
 }
 
-static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
+static int
+vma_shareable(struct vm_area_struct *vma, unsigned long addr)
 {
 	unsigned long base = addr & PUD_MASK;
 	unsigned long end = base + PUD_SIZE;
@@ -55,12 +56,12 @@ static int vma_shareable(struct vm_area_struct *vma, unsigned long addr)
 /*
  * search for a shareable pmd page for hugetlb.
  */
-static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+static void
+huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
 {
 	struct vm_area_struct *vma = find_vma(mm, addr);
 	struct address_space *mapping = vma->vm_file->f_mapping;
-	pgoff_t idx = ((addr - vma->vm_start) >> PAGE_SHIFT) +
-			vma->vm_pgoff;
+	pgoff_t idx = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
 	struct prio_tree_iter iter;
 	struct vm_area_struct *svma;
 	unsigned long saddr;
@@ -70,6 +71,7 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
 		return;
 
 	spin_lock(&mapping->i_mmap_lock);
+
 	vma_prio_tree_foreach(svma, &iter, &mapping->i_mmap, idx, idx) {
 		if (svma == vma)
 			continue;
@@ -88,11 +90,14 @@ static void huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
 		goto out;
 
 	spin_lock(&mm->page_table_lock);
+
 	if (pud_none(*pud))
 		pud_populate(mm, pud, (pmd_t *)((unsigned long)spte & PAGE_MASK));
 	else
 		put_page(virt_to_page(spte));
+
 	spin_unlock(&mm->page_table_lock);
+
 out:
 	spin_unlock(&mapping->i_mmap_lock);
 }
@@ -135,8 +140,10 @@ pte_t *huge_pte_alloc(struct mm_struct *mm, unsigned long addr)
 	if (pud) {
 		if (pud_none(*pud))
 			huge_pmd_share(mm, addr, pud);
-		pte = (pte_t *) pmd_alloc(mm, pud, addr);
+
+		pte = (pte_t *)pmd_alloc(mm, pud, addr);
 	}
+
 	BUG_ON(pte && !pte_none(*pte) && !pte_huge(*pte));
 
 	return pte;
@@ -224,9 +231,10 @@ follow_huge_pmd(struct mm_struct *mm, unsigned long address,
 /* x86_64 also uses this file */
 
 #ifdef HAVE_ARCH_HUGETLB_UNMAPPED_AREA
-static unsigned long hugetlb_get_unmapped_area_bottomup(struct file *file,
-		unsigned long addr, unsigned long len,
-		unsigned long pgoff, unsigned long flags)
+static unsigned long
+hugetlb_get_unmapped_area_bottomup(struct file *file, unsigned long addr,
+								   unsigned long len, unsigned long pgoff,
+								   unsigned long flags)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
@@ -266,9 +274,10 @@ full_search:
 	}
 }
 
-static unsigned long hugetlb_get_unmapped_area_topdown(struct file *file,
-		unsigned long addr0, unsigned long len,
-		unsigned long pgoff, unsigned long flags)
+static unsigned long
+hugetlb_get_unmapped_area_topdown(struct file *file, unsigned long addr0,
+								  unsigned long len, unsigned long pgoff,
+								  unsigned long flags)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma, *prev_vma;
@@ -343,8 +352,7 @@ fail:
 	 */
 	mm->free_area_cache = TASK_UNMAPPED_BASE;
 	mm->cached_hole_size = ~0UL;
-	addr = hugetlb_get_unmapped_area_bottomup(file, addr0,
-			len, pgoff, flags);
+	addr = hugetlb_get_unmapped_area_bottomup(file, addr0, len, pgoff, flags);
 
 	/*
 	 * Restore the topdown base:
@@ -357,13 +365,15 @@ fail:
 
 unsigned long
 hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
-		unsigned long len, unsigned long pgoff, unsigned long flags)
+						  unsigned long len, unsigned long pgoff,
+						  unsigned long flags)
 {
 	struct mm_struct *mm = current->mm;
 	struct vm_area_struct *vma;
 
 	if (len & ~HPAGE_MASK)
 		return -EINVAL;
+
 	if (len > TASK_SIZE)
 		return -ENOMEM;
 
@@ -380,12 +390,12 @@ hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
 		    (!vma || addr + len <= vma->vm_start))
 			return addr;
 	}
+
 	if (mm->get_unmapped_area == arch_get_unmapped_area)
-		return hugetlb_get_unmapped_area_bottomup(file, addr, len,
-				pgoff, flags);
+		return hugetlb_get_unmapped_area_bottomup(file, addr, len, pgoff,
+												  flags);
 	else
-		return hugetlb_get_unmapped_area_topdown(file, addr, len,
-				pgoff, flags);
+		return hugetlb_get_unmapped_area_topdown(file, addr, len, pgoff, flags);
 }
 
 #endif /*HAVE_ARCH_HUGETLB_UNMAPPED_AREA*/

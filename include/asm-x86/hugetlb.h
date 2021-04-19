@@ -36,8 +36,9 @@ static inline void hugetlb_free_pgd_range(struct mmu_gather **tlb,
 	free_pgd_range(tlb, addr, end, floor, ceiling);
 }
 
-static inline void set_huge_pte_at(struct mm_struct *mm, unsigned long addr,
-				   pte_t *ptep, pte_t pte)
+static inline void
+set_huge_pte_at(struct mm_struct *mm, unsigned long addr, pte_t *ptep,
+				pte_t pte)
 {
 	set_pte_at(mm, addr, ptep, pte);
 }

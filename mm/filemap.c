@@ -658,8 +658,8 @@ EXPORT_SYMBOL(find_get_page);
  *
  * Returns zero if the page was not present. find_lock_page() may sleep.
  */
-struct page *find_lock_page(struct address_space *mapping,
-				pgoff_t offset)
+struct page *
+find_lock_page(struct address_space *mapping, pgoff_t offset)
 {
 	struct page *page;
 

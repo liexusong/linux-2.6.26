@@ -57,12 +57,12 @@ enum {
 };
 
 static match_table_t tokens = {
-	{Opt_size,	"size=%s"},
+	{Opt_size,		"size=%s"},
 	{Opt_nr_inodes,	"nr_inodes=%s"},
-	{Opt_mode,	"mode=%o"},
-	{Opt_uid,	"uid=%u"},
-	{Opt_gid,	"gid=%u"},
-	{Opt_err,	NULL},
+	{Opt_mode,		"mode=%o"},
+	{Opt_uid,		"uid=%u"},
+	{Opt_gid,		"gid=%u"},
+	{Opt_err,		NULL},
 };
 
 static void huge_pagevec_release(struct pagevec *pvec)
@@ -90,7 +90,7 @@ static int hugetlbfs_file_mmap(struct file *file, struct vm_area_struct *vma)
 	 * and ia64).
 	 */
 	vma->vm_flags |= VM_HUGETLB | VM_RESERVED;
-	vma->vm_ops = &hugetlb_vm_ops;
+	vma->vm_ops = &hugetlb_vm_ops; // 设置虚拟内存区的操作函数列表
 
 	if (vma->vm_pgoff & ~(HPAGE_MASK >> PAGE_SHIFT))
 		return -EINVAL;
@@ -105,13 +105,15 @@ static int hugetlbfs_file_mmap(struct file *file, struct vm_area_struct *vma)
 
 	if (vma->vm_flags & VM_MAYSHARE &&
 	    hugetlb_reserve_pages(inode, vma->vm_pgoff >> (HPAGE_SHIFT-PAGE_SHIFT),
-				  len >> HPAGE_SHIFT))
+							  len >> HPAGE_SHIFT))
 		goto out;
 
 	ret = 0;
 	hugetlb_prefault_arch_hook(vma->vm_mm);
+
 	if (vma->vm_flags & VM_WRITE && inode->i_size < len)
 		inode->i_size = len;
+
 out:
 	mutex_unlock(&inode->i_mutex);
 
@@ -487,14 +489,16 @@ out:
 	return error;
 }
 
-static struct inode *hugetlbfs_get_inode(struct super_block *sb, uid_t uid, 
-					gid_t gid, int mode, dev_t dev)
+static struct inode *
+hugetlbfs_get_inode(struct super_block *sb, uid_t uid, gid_t gid, int mode,
+					dev_t dev)
 {
 	struct inode *inode;
 
 	inode = new_inode(sb);
 	if (inode) {
 		struct hugetlbfs_inode_info *info;
+
 		inode->i_mode = mode;
 		inode->i_uid = uid;
 		inode->i_gid = gid;
@@ -503,16 +507,20 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb, uid_t uid,
 		inode->i_mapping->backing_dev_info =&hugetlbfs_backing_dev_info;
 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
 		INIT_LIST_HEAD(&inode->i_mapping->private_list);
+
 		info = HUGETLBFS_I(inode);
 		mpol_shared_policy_init(&info->policy, NULL);
+
 		switch (mode & S_IFMT) {
 		default:
 			init_special_inode(inode, mode, dev);
 			break;
+
 		case S_IFREG:
 			inode->i_op = &hugetlbfs_inode_operations;
 			inode->i_fop = &hugetlbfs_file_operations;
 			break;
+
 		case S_IFDIR:
 			inode->i_op = &hugetlbfs_dir_inode_operations;
 			inode->i_fop = &simple_dir_operations;
@@ -520,19 +528,21 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb, uid_t uid,
 			/* directory inodes start off with i_nlink == 2 (for "." entry) */
 			inc_nlink(inode);
 			break;
+
 		case S_IFLNK:
 			inode->i_op = &page_symlink_inode_operations;
 			break;
 		}
 	}
+
 	return inode;
 }
 
 /*
  * File creation. Allocate an inode, and we're done..
  */
-static int hugetlbfs_mknod(struct inode *dir,
-			struct dentry *dentry, int mode, dev_t dev)
+static int
+hugetlbfs_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
 {
 	struct inode *inode;
 	int error = -ENOSPC;
@@ -545,6 +555,7 @@ static int hugetlbfs_mknod(struct inode *dir,
 	} else {
 		gid = current->fsgid;
 	}
+
 	inode = hugetlbfs_get_inode(dir->i_sb, current->fsuid, gid, mode, dev);
 	if (inode) {
 		dir->i_ctime = dir->i_mtime = CURRENT_TIME;
@@ -552,6 +563,7 @@ static int hugetlbfs_mknod(struct inode *dir,
 		dget(dentry);	/* Extra count - pin the dentry in core */
 		error = 0;
 	}
+
 	return error;
 }
 
@@ -563,7 +575,8 @@ static int hugetlbfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 	return retval;
 }
 
-static int hugetlbfs_create(struct inode *dir, struct dentry *dentry, int mode, struct nameidata *nd)
+static int hugetlbfs_create(struct inode *dir, struct dentry *dentry, int mode,
+							struct nameidata *nd)
 {
 	return hugetlbfs_mknod(dir, dentry, mode | S_IFREG, 0);
 }
@@ -704,9 +717,9 @@ static void init_once(struct kmem_cache *cachep, void *foo)
 }
 
 const struct file_operations hugetlbfs_file_operations = {
-	.read			= hugetlbfs_read,
-	.mmap			= hugetlbfs_file_mmap,
-	.fsync			= simple_sync_file,
+	.read				= hugetlbfs_read,
+	.mmap				= hugetlbfs_file_mmap,
+	.fsync				= simple_sync_file,
 	.get_unmapped_area	= hugetlb_get_unmapped_area,
 };
 
@@ -730,10 +743,10 @@ static const struct inode_operations hugetlbfs_inode_operations = {
 static const struct super_operations hugetlbfs_ops = {
 	.alloc_inode    = hugetlbfs_alloc_inode,
 	.destroy_inode  = hugetlbfs_destroy_inode,
-	.statfs		= hugetlbfs_statfs,
+	.statfs			= hugetlbfs_statfs,
 	.delete_inode	= hugetlbfs_delete_inode,
-	.drop_inode	= hugetlbfs_drop_inode,
-	.put_super	= hugetlbfs_put_super,
+	.drop_inode		= hugetlbfs_drop_inode,
+	.put_super		= hugetlbfs_put_super,
 	.show_options	= generic_show_options,
 };
 

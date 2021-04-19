@@ -201,7 +201,7 @@ struct vm_operations_struct {
 struct mmu_gather;
 struct inode;
 
-#define page_private(page)		((page)->private)
+#define page_private(page)			((page)->private)
 #define set_page_private(page, v)	((page)->private = (v))
 
 /*
@@ -315,13 +315,14 @@ void split_page(struct page *page, unsigned int order);
  */
 typedef void compound_page_dtor(struct page *);
 
-static inline void set_compound_page_dtor(struct page *page,
-						compound_page_dtor *dtor)
+static inline void
+set_compound_page_dtor(struct page *page, compound_page_dtor *dtor)
 {
 	page[1].lru.next = (void *)dtor;
 }
 
-static inline compound_page_dtor *get_compound_page_dtor(struct page *page)
+static inline compound_page_dtor *
+get_compound_page_dtor(struct page *page)
 {
 	return (compound_page_dtor *)page[1].lru.next;
 }
@@ -894,14 +895,14 @@ int __pte_alloc_kernel(pmd_t *pmd, unsigned long address);
 #if defined(CONFIG_MMU) && !defined(__ARCH_HAS_4LEVEL_HACK)
 static inline pud_t *pud_alloc(struct mm_struct *mm, pgd_t *pgd, unsigned long address)
 {
-	return (unlikely(pgd_none(*pgd)) && __pud_alloc(mm, pgd, address))?
-		NULL: pud_offset(pgd, address);
+	return (unlikely(pgd_none(*pgd)) && __pud_alloc(mm, pgd, address))
+				? NULL: pud_offset(pgd, address);
 }
 
 static inline pmd_t *pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address)
 {
-	return (unlikely(pud_none(*pud)) && __pmd_alloc(mm, pud, address))?
-		NULL: pmd_offset(pud, address);
+	return (unlikely(pud_none(*pud)) && __pmd_alloc(mm, pud, address))
+				? NULL: pmd_offset(pud, address);
 }
 #endif /* CONFIG_MMU && !__ARCH_HAS_4LEVEL_HACK */
 

@@ -438,7 +438,7 @@ void *radix_tree_lookup(struct radix_tree_root *root, unsigned long index)
 
 	do {
 		slot = (struct radix_tree_node **)
-			(node->slots + ((index>>shift) & RADIX_TREE_MAP_MASK));
+					(node->slots + ((index>>shift) & RADIX_TREE_MAP_MASK));
 		node = rcu_dereference(*slot);
 		if (node == NULL)
 			return NULL;

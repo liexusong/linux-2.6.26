@@ -321,11 +321,12 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
 #ifdef CONFIG_PARAVIRT
 #include <asm/paravirt.h>
 #else  /* !CONFIG_PARAVIRT */
-#define set_pte(ptep, pte)		native_set_pte(ptep, pte)
+#define set_pte(ptep, pte)				native_set_pte(ptep, pte)
 #define set_pte_at(mm, addr, ptep, pte)	native_set_pte_at(mm, addr, ptep, pte)
 
-#define set_pte_present(mm, addr, ptep, pte)				\
+#define set_pte_present(mm, addr, ptep, pte)		\
 	native_set_pte_present(mm, addr, ptep, pte)
+
 #define set_pte_atomic(ptep, pte)					\
 	native_set_pte_atomic(ptep, pte)
 
@@ -389,8 +390,9 @@ static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
 	return res;
 }
 
-static inline void native_set_pte_at(struct mm_struct *mm, unsigned long addr,
-				     pte_t *ptep , pte_t pte)
+static inline void
+native_set_pte_at(struct mm_struct *mm, unsigned long addr, pte_t *ptep,
+				  pte_t pte)
 {
 	native_set_pte(ptep, pte);
 }
