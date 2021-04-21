@@ -242,19 +242,19 @@ static struct kmem_cache *pwq_cache __read_mostly;
 
 
 /* Setup the structure that is used as key for the RB tree */
-static inline void ep_set_ffd(struct epoll_filefd *ffd,
-			      struct file *file, int fd)
+static inline void
+ep_set_ffd(struct epoll_filefd *ffd, struct file *file, int fd)
 {
 	ffd->file = file;
 	ffd->fd = fd;
 }
 
 /* Compare RB tree keys */
-static inline int ep_cmp_ffd(struct epoll_filefd *p1,
-			     struct epoll_filefd *p2)
+static inline int
+ep_cmp_ffd(struct epoll_filefd *p1, struct epoll_filefd *p2)
 {
-	return (p1->file > p2->file ? +1:
-	        (p1->file < p2->file ? -1 : p1->fd - p2->fd));
+	return (p1->file > p2->file ? +1 :
+				(p1->file < p2->file ? -1 : p1->fd - p2->fd));
 }
 
 /* Tells us if the item is currently linked */
@@ -316,7 +316,8 @@ static void ep_poll_safewake(struct poll_safewake *psw, wait_queue_head_t *wq)
 	list_for_each_entry(tncur, lsthead, llink) {
 
 		if (tncur->wq == wq ||
-		    (tncur->task == this_task && ++wake_nests > EP_MAX_POLLWAKE_NESTS)) {
+		    (tncur->task == this_task && ++wake_nests > EP_MAX_POLLWAKE_NESTS))
+		{
 			/*
 			 * Ops ... loop detected or maximum nest level reached.
 			 * We abort this wake by breaking the cycle itself.
@@ -589,7 +590,8 @@ static struct epitem *ep_find(struct eventpoll *ep, struct file *file, int fd)
  * machanism. It is called by the stored file descriptors when they
  * have events to report.
  */
-static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *key)
+static int
+ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *key)
 {
 	int pwake = 0;
 	unsigned long flags;
@@ -637,6 +639,7 @@ is_linked:
 	 */
 	if (waitqueue_active(&ep->wq))
 		wake_up_locked(&ep->wq);
+
 	if (waitqueue_active(&ep->poll_wait))
 		pwake++;
 
@@ -654,8 +657,9 @@ out_unlock:
  * This is the callback that is used to add our wait queue to the
  * target file wakeup lists.
  */
-static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
-				 poll_table *pt)
+static void
+ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
+					 poll_table *pt)
 {
 	struct epitem *epi = ep_item_from_epqueue(pt);
 	struct eppoll_entry *pwq;
@@ -696,7 +700,7 @@ static void ep_rbtree_insert(struct eventpoll *ep, struct epitem *epi)
  * Must be called with "mtx" held.
  */
 static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
-		     struct file *tfile, int fd)
+					 struct file *tfile, int fd)
 {
 	int error, revents, pwake = 0;
 	unsigned long flags;
@@ -797,7 +801,8 @@ error_return:
  * Modify the interest event mask by dropping an event if the new mask
  * has a match in the current file status. Must be called with "mtx" held.
  */
-static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_event *event)
+static int
+ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_event *event)
 {
 	int pwake = 0;
 	unsigned int revents;
@@ -846,8 +851,9 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
 	return 0;
 }
 
-static int ep_send_events(struct eventpoll *ep, struct epoll_event __user *events,
-			  int maxevents)
+static int
+ep_send_events(struct eventpoll *ep, struct epoll_event __user *events,
+			   int maxevents)
 {
 	int eventcnt, error = -EFAULT, pwake = 0;
 	unsigned int revents;
@@ -901,13 +907,13 @@ static int ep_send_events(struct eventpoll *ep, struct epoll_event __user *event
 		 * the item.
 		 */
 		if (revents) {
-			if (__put_user(revents,
-				       &events[eventcnt].events) ||
-			    __put_user(epi->event.data,
-				       &events[eventcnt].data))
+			if (__put_user(revents, &events[eventcnt].events) ||
+			    __put_user(epi->event.data, &events[eventcnt].data))
 				goto errxit;
+
 			if (epi->event.events & EPOLLONESHOT)
 				epi->event.events &= EP_PRIVATE_BITS;
+
 			eventcnt++;
 		}
 		/*
@@ -915,10 +921,10 @@ static int ep_send_events(struct eventpoll *ep, struct epoll_event __user *event
 		 * us. The epoll_ctl() callers are locked out by us holding
 		 * "mtx" and the poll callback will queue them in ep->ovflist.
 		 */
-		if (!(epi->event.events & EPOLLET) &&
-		    (revents & epi->event.events))
+		if (!(epi->event.events & EPOLLET) && (revents & epi->event.events))
 			list_add_tail(&epi->rdllink, &ep->rdllist);
 	}
+
 	error = 0;
 
 errxit:
@@ -970,8 +976,9 @@ errxit:
 	return eventcnt == 0 ? error: eventcnt;
 }
 
-static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
-		   int maxevents, long timeout)
+static int
+ep_poll(struct eventpoll *ep, struct epoll_event __user *events, int maxevents,
+		long timeout)
 {
 	int res, eavail;
 	unsigned long flags;
@@ -983,8 +990,9 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
 	 * and the overflow condition. The passed timeout is in milliseconds,
 	 * that why (t * HZ) / 1000.
 	 */
-	jtimeout = (timeout < 0 || timeout >= EP_MAX_MSTIMEO) ?
-		MAX_SCHEDULE_TIMEOUT : (timeout * HZ + 999) / 1000;
+	jtimeout = (timeout < 0 || timeout >= EP_MAX_MSTIMEO)
+							? MAX_SCHEDULE_TIMEOUT
+							: (timeout * HZ + 999) / 1000;
 
 retry:
 	spin_lock_irqsave(&ep->lock, flags);
@@ -1007,8 +1015,10 @@ retry:
 			 * to TASK_INTERRUPTIBLE before doing the checks.
 			 */
 			set_current_state(TASK_INTERRUPTIBLE);
+
 			if (!list_empty(&ep->rdllist) || !jtimeout)
 				break;
+
 			if (signal_pending(current)) {
 				res = -EINTR;
 				break;
@@ -1018,8 +1028,8 @@ retry:
 			jtimeout = schedule_timeout(jtimeout);
 			spin_lock_irqsave(&ep->lock, flags);
 		}
-		__remove_wait_queue(&ep->wq, &wait);
 
+		__remove_wait_queue(&ep->wq, &wait);
 		set_current_state(TASK_RUNNING);
 	}
 
@@ -1084,8 +1094,8 @@ error_return:
  * the eventpoll file that enables the insertion/removal/change of
  * file descriptors inside the interest set.
  */
-asmlinkage long sys_epoll_ctl(int epfd, int op, int fd,
-			      struct epoll_event __user *event)
+asmlinkage long
+sys_epoll_ctl(int epfd, int op, int fd, struct epoll_event __user *event)
 {
 	int error;
 	struct file *file, *tfile;
@@ -1146,25 +1156,30 @@ asmlinkage long sys_epoll_ctl(int epfd, int op, int fd,
 	case EPOLL_CTL_ADD:
 		if (!epi) {
 			epds.events |= POLLERR | POLLHUP;
-
 			error = ep_insert(ep, &epds, tfile, fd);
-		} else
+		} else {
 			error = -EEXIST;
+		}
 		break;
+
 	case EPOLL_CTL_DEL:
-		if (epi)
+		if (epi) {
 			error = ep_remove(ep, epi);
-		else
+		} else {
 			error = -ENOENT;
+		}
 		break;
+
 	case EPOLL_CTL_MOD:
 		if (epi) {
 			epds.events |= POLLERR | POLLHUP;
 			error = ep_modify(ep, epi, &epds);
-		} else
+		} else {
 			error = -ENOENT;
+		}
 		break;
 	}
+
 	mutex_unlock(&ep->mtx);
 
 error_tgt_fput:
@@ -1172,7 +1187,8 @@ error_tgt_fput:
 error_fput:
 	fput(file);
 error_return:
-	DNPRINTK(3, (KERN_INFO "[%p] eventpoll: sys_epoll_ctl(%d, %d, %d, %p) = %d\n",
+	DNPRINTK(3, (KERN_INFO
+			 "[%p] eventpoll: sys_epoll_ctl(%d, %d, %d, %p) = %d\n",
 		     current, epfd, op, fd, event, error));
 
 	return error;
@@ -1182,8 +1198,9 @@ error_return:
  * Implement the event wait interface for the eventpoll file. It is the kernel
  * part of the user space epoll_wait(2).
  */
-asmlinkage long sys_epoll_wait(int epfd, struct epoll_event __user *events,
-			       int maxevents, int timeout)
+asmlinkage long
+sys_epoll_wait(int epfd, struct epoll_event __user *events, int maxevents,
+			   int timeout)
 {
 	int error;
 	struct file *file;
@@ -1228,7 +1245,8 @@ asmlinkage long sys_epoll_wait(int epfd, struct epoll_event __user *events,
 error_fput:
 	fput(file);
 error_return:
-	DNPRINTK(3, (KERN_INFO "[%p] eventpoll: sys_epoll_wait(%d, %p, %d, %d) = %d\n",
+	DNPRINTK(3, (KERN_INFO
+			 "[%p] eventpoll: sys_epoll_wait(%d, %p, %d, %d) = %d\n",
 		     current, epfd, events, maxevents, timeout, error));
 
 	return error;
@@ -1240,9 +1258,9 @@ error_return:
  * Implement the event wait interface for the eventpoll file. It is the kernel
  * part of the user space epoll_pwait(2).
  */
-asmlinkage long sys_epoll_pwait(int epfd, struct epoll_event __user *events,
-		int maxevents, int timeout, const sigset_t __user *sigmask,
-		size_t sigsetsize)
+asmlinkage long
+sys_epoll_pwait(int epfd, struct epoll_event __user *events, int maxevents,
+				int timeout, const sigset_t __user *sigmask, size_t sigsetsize)
 {
 	int error;
 	sigset_t ksigmask, sigsaved;
@@ -1290,14 +1308,13 @@ static int __init eventpoll_init(void)
 	ep_poll_safewake_init(&psw);
 
 	/* Allocates slab cache used to allocate "struct epitem" items */
-	epi_cache = kmem_cache_create("eventpoll_epi", sizeof(struct epitem),
-			0, SLAB_HWCACHE_ALIGN|EPI_SLAB_DEBUG|SLAB_PANIC,
-			NULL);
+	epi_cache = kmem_cache_create("eventpoll_epi", sizeof(struct epitem), 0,
+								  SLAB_HWCACHE_ALIGN|EPI_SLAB_DEBUG|SLAB_PANIC,
+								  NULL);
 
 	/* Allocates slab cache used to allocate "struct eppoll_entry" */
-	pwq_cache = kmem_cache_create("eventpoll_pwq",
-			sizeof(struct eppoll_entry), 0,
-			EPI_SLAB_DEBUG|SLAB_PANIC, NULL);
+	pwq_cache = kmem_cache_create("eventpoll_pwq", sizeof(struct eppoll_entry),
+								  0, EPI_SLAB_DEBUG|SLAB_PANIC, NULL);
 
 	return 0;
 }
